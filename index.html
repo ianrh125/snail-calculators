@@ -1,0 +1,1037 @@
+<head><base target="_blank">
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        /* changing font for all text */
+        body{
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        /* establishing types for different kinds of text used*/
+        .title{
+            font-weight: bold;
+            margin: 0px; /* altering text spacing */
+        }
+        .prompt{
+            color: blue;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+        .result-text{
+            color: green;
+            display: inline-block; /* allows this and result to display in one line */
+            margin: 0px;
+        }
+        .result-number{
+            font-weight: bold;
+            margin: 0px;
+            display: inline-block;
+        }
+        /* display box for calculators */
+        .calculator{
+            background-color: #EEEEEE;
+            border: 2px solid black;
+            border-radius: 10px; /* round corners */
+            padding: 10px; /* giving text room */
+            margin: 10px; /* spacing calculators apart */
+            width: 500px; /* change if needed,  */
+            float:left;
+            /*display: inline-block; /* let them show side by side */
+        }
+        .result-box{
+            border: 1px solid black;
+            background-color: white;
+            padding: 5px;
+        }
+        .bar-graph{
+            border: 1px solid black;
+            padding: 5px;
+            margin: 5px;
+            min-height: 100px;
+            min-width: 464px;
+        }
+        .graph-bar{
+            display: inline-block;
+            margin: 2px;
+        }
+        .miss-bar{
+            border: 1px solid black;
+            /*border-bottom: 0px;*/
+            background-color: red;
+            width: 40px;
+        }
+        .hit-bar{
+            
+            border: 1px solid black;
+            background-color: #1166dd;
+            width: 40px;
+        }
+        .mull-cat{
+            max-width: 100px;
+            margin: 1px;
+        }
+        .mull-cat:placeholder-shown + .mull-req{
+            display:none;
+        }
+        .mull-req{
+            padding-bottom: 0px;
+            border-bottom: 0px;
+        }
+        table {
+            border: 2px solid rgb(80 80 80);
+            border-collapse: collapse;
+            border-spacing: 0;
+            width: 100%;
+            margin-top: 8px;
+            margin-bottom: 10px;
+        }
+        th {
+            border: 1px solid rgb(120 120 120);
+            background-color: #ddd;
+            padding-top: 3px;
+            padding-bottom: 3px;
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+        td {
+            border: 1px solid rgb(160 160 160);
+            padding-top: 2px;
+            padding-bottom: 2px;
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function fact(x){
+            let y = x
+            while(x>2){
+                x=x-1
+                y=y*x
+            }
+            if(y==0){y=y+1}
+            return y
+        }
+    
+        function choose(x,y){
+            let z = (fact(x))/(fact(y)*fact(x-y))
+            return z
+        }
+        
+        // These drawType functions are the foundation of most of the tools. They seem to be working well for me, but it might be good to be extra sure they're working right
+
+        // given deck size, type count, draw size, and quota, calculates the chance of drawing exactly the quota of that type
+        function drawType(allTotal, typeTotal, allDrawn, typeDrawn){
+            let x = choose(allTotal-typeTotal, allDrawn-typeDrawn)*choose(typeTotal, typeDrawn)/choose(allTotal, allDrawn);
+            return x;
+        }
+
+        function drawTwoType(allTotal, totalA, totalB, allDrawn, drawnA, drawnB){
+            return drawType(allTotal, totalA, allDrawn, drawnA) * drawType(allTotal - totalA, totalB, allDrawn - drawnA, drawnB);
+        }
+
+        function drawThreeType(allTotal, totalA, totalB, totalC, allDrawn, drawnA, drawnB, drawnC){
+            return drawType(allTotal, totalA, allDrawn, drawnA) * drawTwoType(allTotal - totalA, totalB, totalC, allDrawn - drawnA, drawnB, drawnC);
+        }
+
+        // given deck size, type count, draw size, and type quota, run drawType for every amount >= quota and sum results
+        // had to be altered to not attempt to draw more than exist in deck
+        function drawTypeMin(allTotal, typeTotal, allDrawn, typeDrawn){
+            let x = 0;
+            for(let i = typeDrawn; i <= allDrawn && i <= typeTotal; i++){
+                x += drawType(allTotal, typeTotal, allDrawn, i);
+            }
+            return x;
+        }
+
+        // given deck size, 2 type counts, draw size, and 2 type quotas, find chance of meeting both quotas
+        // walks through all satisfactory amounts of first type, and uses drawTypeMin to see if second type will meet quota
+        // multiplies the two together to get the intersecting probability, and returns the sum
+        // Since we already accounted for the number of type A being drawn, the second calculation is run with all type A removed from the deck
+        function drawTwoTypeMin(allTotal, totalA, totalB, allDrawn, drawnA, drawnB){
+            let x = 0;
+            for(let i = drawnA; i <= allDrawn && i <= totalA; i++){
+                x += drawType(allTotal, totalA, allDrawn, i)*drawTypeMin(allTotal-totalA, totalB, allDrawn-i, drawnB);
+            }
+            return x;
+        }
+
+        // like drawTwoTypeMin, but for three. The principle is the same
+        function drawThreeTypeMin(allTotal, totalA, totalB, totalC, allDrawn, drawnA, drawnB, drawnC){
+            let x = 0;
+            for(let i = drawnA; i <= allDrawn && i <= totalA; i++){
+                x += drawType(allTotal, totalA, allDrawn, i)*drawTwoTypeMin(allTotal - totalA, totalB, totalC, allDrawn-i, drawnB, drawnC);
+            }
+            return x;
+        }
+        
+        //odds of drawing a card of a type by a certain turn, modified to use drawTypeMin
+        function drawby(T,N){
+            var textType = Node.textContent ? 'textContent' : 'innerText',
+                N = parseFloat(document.getElementById('N').value) || 0,
+                T = parseFloat(document.getElementById('T').value) || 0,
+                result = document.getElementById('result');
+            //let x=(1-(choose(99-N,7+T)/choose(99,7+T)));
+            let x = (drawTypeMin(99, N, T+7, 1));
+            result[textType] = x.toLocaleString(undefined,{style: 'percent', minimumFractionDigits:1});
+        }
+    
+        // odds of missing a land drop with L lands in library
+        function lands(L,X){
+            let x=((99-L)*choose(99-L,7)*choose(L,X))/(choose(99,X+7)*99)
+            // I multiplied by (99-L)/99 and replaced 7 with 8 to account for the fact that most players will be on the draw
+            // I'm a little less sure about that second part though, use your own judgment
+            return x;
+        }
+
+        // I used drawTypeMin to create a cumulative version of lands. This might actually correct some slight errors with the last version
+        function newLands(landCount, turn){
+            return 1-drawTypeMin(99, landCount, turn + 7, turn);
+        }
+
+        // calculates the probability of a certain number of lands appearning in an opening hand
+        function landCount(L,X){
+            //let x = (choose(99-L,7-X)*choose(L,X))/(choose(99,7));
+            let x = drawType(99, L, 7, X);
+            return x;
+        }
+
+        //runs newLands to find median turn to miss a land drop
+        function miss(L){
+            var textType = Node.textContent ? 'textContent' : 'innerText',
+                L = parseFloat(document.getElementById('L').value) || 0,
+                result = document.getElementById('result1');
+            let p=0;
+            let pList = [];
+            let zList = [];
+            
+            for(let z = 1; z <= 10; z++){
+                //p=p+lands(L,z);
+                p = newLands(L,z);
+                pList.push(p);
+
+                zList.push(z.toString());
+                if(p<.5){
+                    result[textType]= z + 1;
+                }
+            }
+            /*let graph = createBarGraph("land-drop-graph", zList, pList, "Turn");
+            document.getElementById("land-drop-result").appendChild(graph);*/
+            if(p<.5){
+                result[textType] = Math.round(7/(1-L/99)); //might be a bit low
+            }
+            
+        }
+
+        // runs landCount from 0-7 to get the overall distribution of lands in the opening hand, then graphs it
+        function openingLands(L){
+            var textType = Node.textContent ? 'textContent' : 'innerText',
+                L = parseFloat(document.getElementById('L1').value) || 0,
+                result = document.getElementById('result2');
+            
+            let p=0;
+            let z=0;
+            let pList = [];
+            let zList = [];
+            
+            while(z<=7){
+                p=p+landCount(L,z);
+                if(p<.5){
+                    result[textType]= z+1;
+                }
+                pList.push(landCount(L,z));
+                zList.push(z.toString());
+                z=z+1
+                
+            }
+            let graph = createBarGraph("opening-land-graph", zList, pList, "Number Drawn in Opening Hand");
+            document.getElementById("opening-land-result").appendChild(graph);
+        }
+        
+        // calculates the probability of desired hand and passes it off to one of the requiredMullGraph functions
+        // ditto for 2 type and 3 type
+        function requiredMulls(count, target){
+            var textType = Node.textContent ? 'textContent' : 'innerText',
+                count = parseFloat(document.getElementById('mullcount').value) || 0,
+                target = parseFloat(document.getElementById('mulltarget').value) || 1,
+                cumulative = document.getElementById('cumulative-1').checked,
+                result = document.getElementById('result-mull-1');
+
+            let handP = drawTypeMin(99, count, 7, target);
+            let graph;
+            if(cumulative){
+                graph = requiredMullGraphCumulative(handP, "required-mull-graph", target, result, textType);
+            }else{
+                graph = requiredMullGraph(handP, "required-mull-graph", target, result, textType);
+            }
+
+            //let graph = createBarGraph("required-mull-graph", zList, pList, "Number of Mulligans Required");
+            document.getElementById("required-mull-result").appendChild(graph);
+            
+        }
+
+        function requiredMullsTwoType(countA, countB, targetA, targetB){
+            var textType = Node.textContent ? 'textContent' : 'innerText',
+                countA = parseFloat(document.getElementById('mullcountA').value) || 0,
+                countB = parseFloat(document.getElementById('mullcountB').value) || 0,
+                targetA = parseFloat(document.getElementById('mulltargetA').value) || 0,
+                targetB = parseFloat(document.getElementById('mulltargetB').value) || 0,
+                cumulative = document.getElementById('cumulative-2').checked,
+                result = document.getElementById('result-mull-2');
+
+            let handP = drawTwoTypeMin(99, countA, countB, 7, targetA, targetB);
+            let p = handP;
+            
+            let graph;
+            if(cumulative){
+                graph = requiredMullGraphCumulative(handP, "required-mull-2-graph", targetA + targetB, result, textType);
+            }else{
+                graph = requiredMullGraph(handP, "required-mull-2-graph", targetA + targetB, result, textType);
+            }
+
+            document.getElementById("required-mull-2-result").appendChild(graph);
+        }
+        
+        function requiredMullsThreeType(countA, countB, countC, targetA, targetB, targetC){
+            var textType = Node.textContent ? 'textContent' : 'innerText',
+                countA = parseFloat(document.getElementById('mullcount-3A').value) || 0,
+                countB = parseFloat(document.getElementById('mullcount-3B').value) || 0,
+                countC = parseFloat(document.getElementById('mullcount-3C').value) || 0,
+                targetA = parseFloat(document.getElementById('mulltarget-3A').value) || 0,
+                targetB = parseFloat(document.getElementById('mulltarget-3B').value) || 0,
+                targetC = parseFloat(document.getElementById('mulltarget-3C').value) || 0,
+                cumulative = document.getElementById('cumulative-3').checked,
+                result = document.getElementById('result-mull-3');
+
+            let handP = drawThreeTypeMin(99, countA, countB, countC, 7, targetA, targetB, targetC);
+            let p = handP;
+            console.log("p = " + p);
+            
+            let graph;
+            if(cumulative){
+                graph = requiredMullGraphCumulative(handP, "required-mull-3-graph", targetA + targetB + targetC, result, textType);
+            }else{
+                graph = requiredMullGraph(handP, "required-mull-3-graph", targetA + targetB + targetC, result, textType);
+            }
+
+            document.getElementById("required-mull-3-result").appendChild(graph);
+        }
+        
+        // takes a count of combo pieces, shows 
+        function comboDraws(countA, countB, countC){
+            var textType = Node.textContent ? 'textContent' : 'innerText',
+                countA = parseFloat(document.getElementById('combodraw-A').value) || 0,
+                countB = parseFloat(document.getElementById('combodraw-B').value) || 0,
+                countC = parseFloat(document.getElementById('combodraw-C').value) || 0,
+                result = document.getElementById('combodraw-result-num');
+            
+            let pList = [];
+            let zList = []
+            let targetA = Math.min(countA, 1);
+            let targetB = Math.min(countB, 1);
+            let targetC = Math.min(countC, 1);
+            for(let draws = 0; draws < 95; draws++){
+                let p = drawThreeTypeMin(99, countA, countB, countC, draws, targetA, targetB, targetC);
+                if(p < .5){
+                    result[textType]= draws;
+                }
+                pList.push(p);
+                zList.push(draws);
+            }
+
+            let graph = document.getElementById("combodraw-graph");
+            if(graph != null){
+                graph.remove();
+            }
+            graph = document.createElement("canvas");
+            graph.id = "combodraw-graph";
+
+            new Chart(graph, {
+                type: 'line',
+                data: {
+                labels: zList,
+                datasets: [{
+                    label: 'chance of drawing combo',
+                    data: pList,
+                    borderWidth: 1
+                }]
+                },
+                options: {
+                    animation: false,
+                    scales: {
+                        y: {
+                        beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat(undefined, { style: 'percent' }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            document.getElementById("combodraw-result").appendChild(graph);
+        }
+        
+        // takes the probability of a certain hand and creates a bargraph for the mulligans required to attain it
+        function requiredMullGraph(handP, graphName, target, result, textType){
+            let p = handP;
+            let pTotal = 0;
+            if(p > .5){
+                result[textType]= 0;
+            }
+
+            let pList = [];
+            let zList = [];
+            
+            for(let z = 0; z <= 8-target && pTotal <= 0.995; z++){
+                pTotal += p;
+                if(pTotal < .5){
+                    result[textType]= z+1;
+                }
+                pList.push(p);
+                zList.push(z.toString());
+                p *= 1 - handP;
+            }
+            zList.push((pList.length) + "+");
+            pList.push(1-pTotal);
+            
+
+            return createBarGraph(graphName, zList, pList, "Required Number of Mulligans");
+        }
+
+        // Similar to requiredMullGraph, interprets the data slightly differently to show the cumulative distribution
+        function requiredMullGraphCumulative(handP, graphName, target, result, textType){
+            let p = handP;
+            let pTotal = 0;
+            if(p > .5){
+                result[textType]= 0;
+            }
+
+            let pList = [];
+            let zList = [];
+
+            for(let z = 0; z <= 8-target && pTotal <= 0.995; z++){
+                pTotal += p;
+                if(pTotal < .5){
+                    result[textType]= z+1;
+                }
+                pList.push(pTotal);
+                zList.push(z.toString());
+                p *= 1 - handP;
+            }
+
+            return createBarGraph(graphName, zList, pList, "Number of Mulligans");
+        }
+
+        // creates a bar graph using my proprietary methods
+        function createBarGraph(graphName, graphLabels, graphValues, xLabelText){
+            let graph = document.getElementById(graphName);
+            if(graph != null){
+                graph.remove();
+            }
+            graph = document.createElement("div");
+            graph.id = graphName;
+            graph.classList.add("bar-graph");
+            let z = 0;
+
+            let heightScale = 250/graphValues.reduce((a, b) => Math.max(a, b), -Infinity)
+            //console.log(heightScale);
+            console.log(graphLabels)
+            
+            let barWidth = Math.round((466 - 6.5 * (graphValues.length))/graphValues.length);
+
+            while(z<graphValues.length){
+                
+                p=graphValues[z];
+                let barHeight = Math.round(p*heightScale);
+                let bar = document.createElement("div");
+                bar.id = "bar-" + z.toString();
+                bar.classList.add("graph-bar");
+                graph.appendChild(bar);
+
+                let textDiv = document.createElement("div");
+                textDiv.innerText = Math.round(p * 100).toString() + "%";
+                textDiv.setAttribute("style", "font-size: 16px; text-align: center");
+                bar.appendChild(textDiv);
+
+                let hitBar = document.createElement("div");
+                hitBar.classList.add("hit-bar");
+                hitBar.setAttribute("style", "width: " + barWidth.toString() + "px;height: " + barHeight.toString() + "px");
+                bar.appendChild(hitBar);
+
+                textDiv = document.createElement("div");
+                textDiv.innerText = graphLabels[z];
+                textDiv.setAttribute("style", "font-size: 16px; text-align: center");
+                bar.appendChild(textDiv);
+
+                z=z+1;
+            }
+            
+            let xLabel = document.createElement("div");
+            xLabel.innerText = xLabelText;
+            xLabel.setAttribute("style", "font-size: 16px; text-align: center");
+            graph.appendChild(xLabel);
+
+            return graph;
+        }
+
+        function tableRow(rowData, type, rowClass){
+            let newRow = document.createElement("tr");
+            for(let i = 0; i < rowData.length; i++){
+                let cell = document.createElement(type);
+                cell.innerText = rowData[i];
+                if(rowClass[i]){
+                    cell.classList.add(rowClass[i]);
+                }
+                newRow.appendChild(cell);
+            }
+            return newRow;
+        }
+
+        function mullStratOneType(deckTotal, countA, turnA, reqA){
+            if(reqA <= 0){
+                return 1;
+            }
+            return drawTypeMin(deckTotal, countA, turnA, reqA);
+        }
+
+        function mullStratTwoType(deckTotal, countA, turnA, reqA, countB, turnB, reqB){
+            if(turnA > turnB){
+                return mullStratTwoType(deckTotal, countB, turnB, reqB, countA, turnA, reqA);
+            }
+            let success = 0;
+            for(let a = reqA; a <= countA && a <= turnA; a++){
+                success += drawType(deckTotal, countA, turnA, a) * mullStratOneType(deckTotal - countA, countB, turnB - a, reqB);
+            }
+            return success;
+        }
+
+        function mullStratThreeType(deckTotal, countA, turnA, reqA, countB, turnB, reqB, countC, turnC, reqC){
+            if(turnA > turnB){
+                return mullStratThreeType(deckTotal, countB, turnB, reqB, countA, turnA, reqA, countC, turnC, reqC);
+            }
+            if(turnA > turnC){
+                return mullStratThreeType(deckTotal, countC, turnC, reqC, countB, turnB, reqB, countA, turnA, reqA);
+            }
+            let success = 0;
+            for(let a = reqA; a <= countA && a <= turnA; a++){
+                success += drawType(deckTotal, countA, turnA, a) * mullStratTwoType(deckTotal - countA, countB, turnB - a, reqB, countC, turnC-a, reqC);
+            }
+            return success;
+        }
+
+        function compareSuccess(a, b) {
+            if (a[a.length - 1] > b[b.length - 1]) {
+                return -1;
+            } else if (a[a.length - 1] < b[b.length - 1]) {
+                return 1;
+            }
+            // a must be equal to b
+            return 0;
+        }
+
+
+        function mullStrat(){
+            var textType = Node.textContent ? 'textContent' : 'innerText';
+            var countA = parseFloat(document.getElementById('mull-cat-A').value) || 0;
+            var reqA = parseFloat(document.getElementById('mull-count-A').value) || 0;
+            var turnA = parseFloat(document.getElementById('mull-turn-A').value) || 0;
+            var countB = parseFloat(document.getElementById('mull-cat-B').value) || 0;
+            var reqB = parseFloat(document.getElementById('mull-count-B').value) || 0;
+            var turnB = parseFloat(document.getElementById('mull-turn-B').value) || 0;
+            var countC = parseFloat(document.getElementById('mull-cat-C').value) || 0;
+            var reqC = parseFloat(document.getElementById('mull-count-C').value) || 0;
+            var turnC = parseFloat(document.getElementById('mull-turn-C').value) || 0;
+            var result = document.getElementById('mullstrat-result');
+            var penalty = (parseFloat(document.getElementById('mull-penalty').value) / 100) || 0;
+
+            let table = document.getElementById("color-output-table");
+            if(table != null){
+                table.remove();
+            }
+            table = document.createElement("table");
+            table.id = "color-output-table";
+            if(countB == 0){
+                table.appendChild(tableRow(["Type A", "Keep After", "Draw Rate", "Success Rate"], "th", ["","","",""]));
+            }
+            else if(countC == 0){
+                table.appendChild(tableRow(["Type A", "Type B", "Keep After", "Draw Rate", "Success Rate"], "th", ["","","","",""]));
+            }
+            else{
+                table.appendChild(tableRow(["Type A", "Type B", "Type C", "Keep After", "Draw Rate", "Success Rate"], "th", ["","","","","",""]));
+            }
+            
+            // check how successful each hand is
+            let successMatrix = [];
+            let drawMatrix = [];
+            for(let a = 0; a <= 7 && a <= countA; a++){
+                if(countB == 0){
+                    let capA = Math.min(reqA, a);
+                    let draw = drawType(99, countA, 7, a);
+                    let success = mullStratOneType(92, countA-capA, turnA, reqA-capA);
+                    if(a > reqA){
+                        successMatrix[reqA] = successMatrix[reqA] * (drawMatrix[reqA])/(drawMatrix[reqA] + draw)
+                             + success * (draw)/(drawMatrix[reqA] + draw);
+                        drawMatrix[reqA] += draw;
+                    }
+                    else{
+                        successMatrix.push(success);
+                        drawMatrix.push(draw);
+                    }
+                }
+                else{
+                    let successMatrixA = [];
+                    let drawMatrixA = [];
+                    for(let b = 0; b <= 7 - a && b <= countB; b++){
+                        if(countC == 0){
+                            let capA = Math.min(reqA, a);
+                            let capB = Math.min(reqB, b);
+                            let draw = drawTwoType(99, countA, countB, 7, a, b);
+                            let success = mullStratTwoType(92, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB);
+                            if(a > reqA){
+                                let oldShare = (drawMatrix[capA][capB])/(drawMatrix[capA][capB] + draw);
+                                let newShare = draw/(drawMatrix[capA][capB] + draw);
+                                successMatrix[capA][capB] = successMatrix[capA][capB] * oldShare + success * newShare;
+                                drawMatrix[capA][capB] += draw;
+                            }
+                            else if(b > reqB){
+                                let oldShare = (drawMatrixA[capB])/(drawMatrixA[capB] + draw);
+                                let newShare = draw/(drawMatrixA[capB] + draw);
+                                successMatrixA[capB] = successMatrixA[capB] * oldShare + success * newShare;
+                                drawMatrixA[capB] += draw;
+                            }
+                            else{
+                                successMatrixA.push(success);
+                                drawMatrixA.push(draw);
+                            }
+                        }
+                        else{
+                            let successMatrixB = [];
+                            let drawMatrixB = [];
+                            for(let c = 0; c <= 7 - a - b && c <= countC; c++){
+                                let capA = Math.min(reqA, a);
+                                let capB = Math.min(reqB, b);
+                                let capC = Math.min(reqC, c);
+                                let draw = drawThreeType(99, countA, countB, countC, 7, a, b, c);
+                                let success = mullStratThreeType(92, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB, countC-capC, turnC, reqC-capC);
+                                if(a > reqA){
+                                    let oldShare = (drawMatrix[capA][capB][capC])/(drawMatrix[capA][capB][capC] + draw);
+                                    let newShare = draw/(drawMatrix[capA][capB][capC] + draw);
+                                    successMatrix[capA][capB][capC] = successMatrix[capA][capB][capC] * oldShare + success * newShare;
+                                    drawMatrix[capA][capB][capC] += draw;
+                                }
+                                else if(b > reqB){
+                                    let oldShare = (drawMatrixA[capB][capC])/(drawMatrixA[capB][capC] + draw);
+                                    let newShare = draw/(drawMatrixA[capB][capC] + draw);
+                                    successMatrixA[capB][capC] = successMatrixA[capB][capC] * oldShare + success * newShare;
+                                    drawMatrixA[capB][capC] += draw;
+                                }
+                                else if(c > reqC){
+                                    let oldShare = (drawMatrixB[capC])/(drawMatrixB[capC] + draw);
+                                    let newShare = draw/(drawMatrixB[capC] + draw);
+                                    successMatrixB[capC] = successMatrixB[capC] * oldShare + success * newShare;
+                                    drawMatrixB[capC] += draw;
+                                }
+                                else{
+                                    successMatrixB.push(success);
+                                    drawMatrixB.push(draw);
+                                }
+                            }
+                            successMatrixA.push(successMatrixB);
+                            drawMatrixA.push(drawMatrixB);
+                        }
+                    }
+                    successMatrix.push(successMatrixA);
+                    drawMatrix.push(drawMatrixA);
+                }
+            }
+
+            // figure out best hands to mulligan down to when needed
+            let mullMatrix = [];
+            for(let a = 0; a <= reqA; a++){
+                if(countB == 0){
+                    if(a > 0){
+                        mullMatrix.push("A");
+                    }
+                    else{
+                        mullMatrix.push("X");
+                    }
+                }
+                else{
+                    let mullMatrixA = [];
+                    for(let b = 0; b <= reqB; b++){
+                        if(countC == 0){
+                            let axis = "X";
+                            let value = 0;
+                            if(a > 0 && successMatrix[a-1][b] > value){
+                                axis = "A";
+                                value = successMatrix[a-1][b];
+                            }
+                            if(b > 0 && successMatrix[a][b-1] > value){
+                                axis = "B";
+                                value = successMatrix[a][b-1];
+                            }
+                            mullMatrixA.push(axis);
+                        }
+                        else{
+                            let mullMatrixB = [];
+                            for(let c = 0; c <= reqC; c++){
+                                let axis = "X";
+                                let value = 0;
+                                if(a > 0 && successMatrix[a-1][b][c] > value){
+                                    axis = "A";
+                                    value = successMatrix[a-1][b][c];
+                                }
+                                if(b > 0 && successMatrix[a][b-1][c] > value){
+                                    axis = "B";
+                                    value = successMatrix[a][b-1][c];
+                                }
+                                if(b > 0 && successMatrix[a][b][c-1] > value){
+                                    axis = "B";
+                                    value = successMatrix[a][b][c-1];
+                                }
+                                mullMatrixB.push(axis);
+                            }
+                            mullMatrixA.push(mullMatrixB);
+                        }
+                    }
+                    mullMatrix.push(mullMatrixA);
+                }
+            }
+
+            // check when we want to keep
+            let keepMatrix = [];
+            let mullSuccess = new Array(9).fill(0);
+            let trueMullSuccess = new Array(9).fill(0);
+            let mullChances = new Array(9).fill(0);
+            if(countC > 0){
+                mullSuccess[8] = successMatrix[0][0][0];
+                trueMullSuccess[8] = successMatrix[0][0][0];
+            }
+            else if(countB > 0){
+                mullSuccess[8] = successMatrix[0][0];
+                trueMullSuccess[8] = successMatrix[0][0];
+            }
+            else{
+                mullSuccess[8] = successMatrix[0];
+                trueMullSuccess[8] = successMatrix[0];
+            }
+            for(let a = 0; a <= reqA; a++){
+                if(countB == 0){
+                    keepMatrix.push(1);
+                }
+                else{
+                    let keepMatrixA = [];
+                    for(let b = 0; b <= reqB; b++){
+                        if(countC == 0){
+                            keepMatrixA.push(1);
+                        }
+                        else{
+                            let keepMatrixB = [];
+                            for(let c = 0; c <= reqC; c++){
+                                keepMatrixB.push(1);
+                            }
+                            keepMatrixA.push(keepMatrixB);
+                        }
+                    }
+                    keepMatrix.push(keepMatrixA);
+                }
+            }
+
+            for(let i = 7; i >= 0; i--){
+                let keep = Math.min(8-i, 7);
+                for(let a = 0; a <= reqA; a++){
+                    if(countB == 0){
+                        let myA = Math.min(a, keep);
+                        if(successMatrix[myA] < mullSuccess[i+1] - Math.min(penalty, i)){
+                            mullSuccess[i] += drawMatrix[a] * (mullSuccess[i+1] - Math.min(penalty, i));
+                            trueMullSuccess[i] += drawMatrix[a] * trueMullSuccess[i+1];
+                            mullChances[i+1] += drawMatrix[a];
+                        }
+                        else{
+                            mullSuccess[i] += drawMatrix[a] * successMatrix[myA];
+                            trueMullSuccess[i] += drawMatrix[a] * successMatrix[myA];
+                            keepMatrix[a] = 8-i;
+                        }
+                    }
+                    else{
+                        for(let b = 0; b <= reqB; b++){
+                            if(countC == 0){
+                                let myA = a;
+                                let myB = b;
+                                while(myA + myB > keep){
+                                    if(mullMatrix[myA][myB] == "A"){
+                                        myA--;
+                                    }
+                                    else if(mullMatrix[myA][myB] == "B"){
+                                        myB--;
+                                    }
+                                    else{
+                                        myA = 0;
+                                        myB = 0;
+                                    }
+                                }
+                                if(successMatrix[myA][myB] < mullSuccess[i+1] - Math.min(penalty, i)){
+                                    mullSuccess[i] += drawMatrix[a][b] * (mullSuccess[i+1] - Math.min(penalty, i));
+                                    trueMullSuccess[i] += drawMatrix[a][b] * (trueMullSuccess[i+1]);
+                                    mullChances[i+1] += drawMatrix[a][b];
+                                }
+                                else{
+                                    mullSuccess[i] += drawMatrix[a][b] * successMatrix[myA][myB];
+                                    trueMullSuccess[i] += drawMatrix[a][b] * successMatrix[myA][myB];
+                                    keepMatrix[a][b] = 8-i;
+                                }
+                            }
+                            else{
+                                for(let c = 0; c <= reqC; c++){
+                                    let myA = a;
+                                    let myB = b;
+                                    let myC = c;
+                                    while(myA + myB + myC > keep){
+                                        if(mullMatrix[myA][myB][myC] == "A"){
+                                            myA--;
+                                        }
+                                        else if(mullMatrix[myA][myB][myC] == "B"){
+                                            myB--;
+                                        }
+                                        else if(mullMatrix[myA][myB][myC] == "C"){
+                                            myC--;
+                                        }
+                                        else{
+                                            myA = 0;
+                                            myB = 0;
+                                            myC = 0;
+                                        }
+                                    }
+                                    if(successMatrix[myA][myB][myC] < mullSuccess[i+1] - Math.min(penalty, i)){
+                                        mullSuccess[i] += drawMatrix[a][b][c] * (mullSuccess[i+1] - Math.min(penalty, i));
+                                        trueMullSuccess[i] += drawMatrix[a][b][c] * (trueMullSuccess[i+1]);
+                                        mullChances[i+1] += drawMatrix[a][b][c];
+                                    }
+                                    else{
+                                        mullSuccess[i] += drawMatrix[a][b][c] * successMatrix[myA][myB][myC];
+                                        trueMullSuccess[i] += drawMatrix[a][b][c] * successMatrix[myA][myB][myC];
+                                        keepMatrix[a][b][c] = 8-i;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            mullChances[0] = 1;
+            for(let i = 1; i < 9; i++){
+                mullChances[i] *= mullChances[i-1];
+            }
+            for(let i = 0; i < 8; i++){
+                mullChances[i] -= mullChances[i+1];
+            }
+
+            result.innerHTML = "Overall success rate: <strong>" + (trueMullSuccess[0] * 100).toFixed(1) + "%</strong>";
+
+            // create table
+            let sortedRows = [];
+            for(let a = 0; a <= reqA; a++){
+                if(countB == 0){
+                    if(keepMatrix[a] > 4){
+                        let keepInstruction = "Going to " + keepMatrix[a];
+                        if(keepMatrix[a] == 8){
+                            keepInstruction = "Always";
+                        }
+                        if(keepMatrix[a] == 7){
+                            keepInstruction = "Free Mulligan";
+                        }
+                        sortedRows.push([a, keepInstruction, (drawMatrix[a]*100).toFixed(1) + "%", successMatrix[a]]);
+                    }
+                }
+                else{
+                    for(let b = 0; b <= reqB; b++){
+                        if(countC == 0){
+                            if(keepMatrix[a][b] > 4){
+                                let keepInstruction = "Going to " + keepMatrix[a][b];
+                                if(keepMatrix[a][b] == 8){
+                                    keepInstruction = "Always";
+                                }
+                                if(keepMatrix[a][b] == 7){
+                                    keepInstruction = "Free Mulligan";
+                                }
+                                sortedRows.push([a, b, keepInstruction, (drawMatrix[a][b]*100).toFixed(1) + "%", successMatrix[a][b]]);
+                            }
+                        }
+                        else{
+                            for(let c = 0; c <= reqC; c++){
+                                if(keepMatrix[a][b][c] > 4){
+                                    let keepInstruction = "Going to " + keepMatrix[a][b][c];
+                                    if(keepMatrix[a][b][c] == 8){
+                                        keepInstruction = "Always";
+                                    }
+                                    if(keepMatrix[a][b][c] == 7){
+                                        keepInstruction = "Free Mull";
+                                    }
+                                    sortedRows.push([a, b, c, keepInstruction, (drawMatrix[a][b][c]*100).toFixed(1) + "%", successMatrix[a][b][c]]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // sort the rows and put them in the table
+            sortedRows = sortedRows.sort(compareSuccess);
+            for(let i = 0; i < sortedRows.length; i++){
+                sortedRows[i][sortedRows[i].length - 1] = (sortedRows[i][sortedRows[i].length - 1]*100).toFixed(1) + "%";
+                table.appendChild(tableRow(sortedRows[i], "td", new Array(sortedRows[i].length).fill("")));
+            }
+
+            let hand = 0;
+            let mulls = 0;
+            for(let i = 0; i < 8; i++){
+                hand += mullChances[i] * Math.min(8-i, 7);
+                mulls += mullChances[i] * i;
+            }
+
+            document.getElementById("mullstrat-result-box").appendChild(table);
+
+            let handSize = document.getElementById("mullstrat-hand-size");
+            if(handSize != null){
+                handSize.remove();
+            }
+            handSize = document.createElement("text");
+            handSize.id = "mullstrat-hand-size";
+            handSize.classList.add("result-text");
+            handSize.innerHTML = "This strategy mulligans <strong>" + mulls.toFixed(2) + "</strong> times on average,<br>going down to <strong>" + (hand.toFixed(2)) + "</strong> cards.";
+            document.getElementById("mullstrat-result-box").appendChild(handSize);
+
+
+            while(mullChances[mullChances.length - 2] < 0.005){
+                mullChances.pop();
+            }
+
+            let graph = createBarGraph("mullstrat-graph", [...mullChances.keys()], mullChances, "Required Number of Mulligans");
+            document.getElementById("mullstrat-result-box").appendChild(graph);
+        }
+        </script>
+    <div class = "calculator" name="mullstrat">
+        <p class="title">Mulligan Strategy Calculator</p>
+        <p class="prompt">How many cards of each desired category are you running?</p>
+        <p class="prompt">
+            <input type="text" class="mull-cat" id="mull-cat-A" placeholder="Category A">
+            <span class="mull-req hidden">
+                I want to draw <input type="text" id="mull-count-A" value="1" style="width: 30px"> 
+                of these by turn <input type="text" id="mull-turn-A" value="1" style="width: 30px">
+            </span>
+        </p>
+        <p class="prompt" style="margin-top: 5px">
+            <input type="text" class="mull-cat" id="mull-cat-B" placeholder="Category B">
+            <span class="mull-req hidden">
+                I want to draw <input type="text" id="mull-count-B" value="1" style="width: 30px"> 
+                of these by turn <input type="text" id="mull-turn-B" value="1" style="width: 30px">
+            </span>
+        </p>
+        <p class="prompt" style="margin-top: 5px">
+            <input type="text" class="mull-cat" id="mull-cat-C" placeholder="Category C">
+            <span class="mull-req hidden">
+                I want to draw <input type="text" id="mull-count-C" value="1" style="width: 30px"> 
+                of these by turn <input type="text" id="mull-turn-C" value="1" style="width: 30px">
+            </span>
+        </p>
+        <p class="prompt">Penalty for going down a card: <input type="text" id="mull-penalty" value="15" style="width: 30px">%</p>
+        <p>
+            <input type="button" value="Compute" onclick="mullStrat()">
+        </p>
+        <div class="result-box" id="mullstrat-result-box">
+            <p id='mullstrat-result' class="result-text"></p>
+        </div>
+    </div>
+    <div class="calculator" name="drawby">
+        <p class="title"> Card Type Drawn Probability Calculator</p>
+        <p class="prompt"> How many cards of the type are you running?</p>
+        <input type="text" id="N" ,="" name="Number">
+        <p class="prompt"> What turn do you want one by?</p>
+        <input type="text" id="T" ,="" name="Turn">
+        <p>
+        <input type="button" value="Compute" onclick="drawby()">
+        </p>
+        <div class="result-box">
+            <p class="result-text"> Probability: </p>
+            <p class="result-number" id="result" name="prob" p=""></p>
+        </div>
+    </div>
+    <div class="calculator" name="landmiss">
+        <p class="title"> Land Drop Miss Calculator</p>
+        <p class="prompt"> How many lands are you running? </p>
+        <input type="text" id="L" ,="" name="Lands">
+        <p>
+        <input type="button" value="Compute" onclick="miss()">
+        </p>
+        <div class="result-box" id="land-drop-result">
+            <p class="result-text"> Average (arithmetic median) turn to miss a land drop: </p>
+            <p class="result-number" id="result1" name="int" p=""></p>
+            <!--div id="land-drop-graph"></div-->
+        </div>
+    </div>
+    <div class="calculator" name="openinglands">
+        <p class="title"> Lands in Opening Hand</p>
+        <p class="prompt"> How many lands are you running? </p>
+        <input type="text" id="L1" ,="" name="Lands">
+        <p>
+        <input type="button" value="Compute" onclick="openingLands()">
+        </p>
+        <div class="result-box" id="opening-land-result">
+            <p class="result-text"> Average (arithmetic median) number of lands: </p>
+            <p class="result-number" id="result2" name="int" p=""></p>
+        </div>
+    </div>
+    <div class="calculator" name="requiredmulls3type">
+        <p class="title"> Mulligans for up to 3 card types</p>
+        <p class="prompt"> How many cards of each type are you running? </p>
+        <input type="text" id="mullcount-3A" placeholder="Type A" name="Number of Cards in Deck">
+        <input type="text" id="mullcount-3B" placeholder="Type B" name="Number of Cards in Deck">
+        <input type="text" id="mullcount-3C" placeholder="Type C" name="Number of Cards in Deck">
+        <p class="prompt"> How many of each do you want to draw in your opening hand? </p>
+        <input type="text" id="mulltarget-3A" placeholder="Type A" name="Number of Cards Drawn">
+        <input type="text" id="mulltarget-3B" placeholder="Type B" name="Number of Cards Drawn">
+        <input type="text" id="mulltarget-3C" placeholder="Type C" name="Number of Cards Drawn">
+        <p>
+        <input type="checkbox" id="cumulative-3" name = "cumulative-3">
+        <label for="cumulative-3">Show cumulative probability</label></p>
+        <p>
+        <input type="button" value="Compute" onclick="requiredMullsThreeType()">
+        </p>
+        <div class="result-box" id="required-mull-3-result">
+            <p class="result-text">Average (arithmetic median) number of mulligans: </p>
+            <p class="result-number" id="result-mull-3" name="int" p=""></p>
+        </div>
+    </div>
+    <div class="calculator" name="combodraws">
+        <p class="title"> Draws required to pull off combos</p>
+        <p class="prompt"> How many cards fill the role of each combo piece? </p>
+        <input type="text" id="combodraw-A" placeholder="Piece A" name="Number of Cards in Deck">
+        <input type="text" id="combodraw-B" placeholder="Piece B" name="Number of Cards in Deck">
+        <input type="text" id="combodraw-C" placeholder="Piece C" name="Number of Cards in Deck">
+        <p>
+        <input type="button" value="Compute" onclick="comboDraws()">
+        </p>
+        <div class="result-box" id="combodraw-result">
+            <p class="result-text">Average (arithmetic median) number of draws required: </p>
+            <p class="result-number" id="combodraw-result-num" name="int" p=""></p>
+        </div>
+    </div>
+</body>
