@@ -505,34 +505,34 @@
             return newRow;
         }
 
-        function mullStratOneType(deckTotal, countA, turnA, reqA){
+        function afterMullOneType(deckTotal, countA, turnA, reqA){
             if(reqA <= 0){
                 return 1;
             }
             return drawTypeMin(deckTotal, countA, turnA, reqA);
         }
 
-        function mullStratTwoType(deckTotal, countA, turnA, reqA, countB, turnB, reqB){
+        function afterMullTwoType(deckTotal, countA, turnA, reqA, countB, turnB, reqB){
             if(turnA > turnB){
-                return mullStratTwoType(deckTotal, countB, turnB, reqB, countA, turnA, reqA);
+                return afterMullTwoType(deckTotal, countB, turnB, reqB, countA, turnA, reqA);
             }
             let success = 0;
             for(let a = reqA; a <= countA && a <= turnA; a++){
-                success += drawType(deckTotal, countA, turnA, a) * mullStratOneType(deckTotal - countA, countB, turnB - a, reqB);
+                success += drawType(deckTotal, countA, turnA, a) * afterMullOneType(deckTotal - countA, countB, turnB - a, reqB);
             }
             return success;
         }
 
-        function mullStratThreeType(deckTotal, countA, turnA, reqA, countB, turnB, reqB, countC, turnC, reqC){
+        function afterMullThreeType(deckTotal, countA, turnA, reqA, countB, turnB, reqB, countC, turnC, reqC){
             if(turnA > turnB){
-                return mullStratThreeType(deckTotal, countB, turnB, reqB, countA, turnA, reqA, countC, turnC, reqC);
+                return afterMullThreeType(deckTotal, countB, turnB, reqB, countA, turnA, reqA, countC, turnC, reqC);
             }
             if(turnA > turnC){
-                return mullStratThreeType(deckTotal, countC, turnC, reqC, countB, turnB, reqB, countA, turnA, reqA);
+                return afterMullThreeType(deckTotal, countC, turnC, reqC, countB, turnB, reqB, countA, turnA, reqA);
             }
             let success = 0;
             for(let a = reqA; a <= countA && a <= turnA; a++){
-                success += drawType(deckTotal, countA, turnA, a) * mullStratTwoType(deckTotal - countA, countB, turnB - a, reqB, countC, turnC-a, reqC);
+                success += drawType(deckTotal, countA, turnA, a) * afterMullTwoType(deckTotal - countA, countB, turnB - a, reqB, countC, turnC-a, reqC);
             }
             return success;
         }
@@ -545,6 +545,397 @@
             }
             // a must be equal to b
             return 0;
+        }
+
+        function mullStratOneType(countA, reqA, turnA, penalty){
+            // check how successful each hand is
+            let successMatrix = [];
+            let drawMatrix = [];
+            for(let a = 0; a <= 7 && a <= countA; a++){
+                let capA = Math.min(reqA, a);
+                let draw = drawType(99, countA, 7, a);
+                let success = afterMullOneType(92, countA-capA, turnA, reqA-capA);
+                if(a > reqA){
+                    successMatrix[reqA] = successMatrix[reqA] * (drawMatrix[reqA])/(drawMatrix[reqA] + draw)
+                            + success * (draw)/(drawMatrix[reqA] + draw);
+                    drawMatrix[reqA] += draw;
+                }
+                else{
+                    successMatrix.push(success);
+                    drawMatrix.push(draw);
+                }
+            }
+
+            // figure out best hands to mulligan down to when needed
+            let mullMatrix = [];
+            for(let a = 0; a <= reqA; a++){
+                if(a > 0){
+                    mullMatrix.push("A");
+                }
+                else{
+                    mullMatrix.push("X");
+                }
+            }
+
+            // check when we want to keep
+            let keepMatrix = [];
+            let mullSuccess = new Array(9).fill(0);
+            let trueMullSuccess = new Array(9).fill(0);
+            let mullChances = new Array(9).fill(0);
+            mullSuccess[8] = successMatrix[0];
+            trueMullSuccess[8] = successMatrix[0];
+            for(let a = 0; a <= reqA; a++){
+                keepMatrix.push(1);
+            }
+
+            for(let i = 7; i >= 0; i--){
+                let keep = Math.min(8-i, 7);
+                for(let a = 0; a <= reqA; a++){
+                    let myA = Math.min(a, keep);
+                    if(successMatrix[myA] < mullSuccess[i+1] - Math.min(penalty, i)){
+                        mullSuccess[i] += drawMatrix[a] * (mullSuccess[i+1] - Math.min(penalty, i));
+                        trueMullSuccess[i] += drawMatrix[a] * trueMullSuccess[i+1];
+                        mullChances[i+1] += drawMatrix[a];
+                    }
+                    else{
+                        mullSuccess[i] += drawMatrix[a] * successMatrix[myA];
+                        trueMullSuccess[i] += drawMatrix[a] * successMatrix[myA];
+                        keepMatrix[a] = 8-i;
+                    }
+                }
+            }
+
+            // calculate absolute discrete mulligan probabilities
+            mullChances[0] = 1;
+            for(let i = 1; i < 9; i++){
+                mullChances[i] *= mullChances[i-1];
+            }
+            for(let i = 0; i < 8; i++){
+                mullChances[i] -= mullChances[i+1];
+            }
+
+            // create table rows
+            let sortedRows = [];
+            for(let a = 0; a <= reqA; a++){
+                if(keepMatrix[a] > 4){
+                    let keepInstruction = "Going to " + keepMatrix[a];
+                    if(keepMatrix[a] == 8){
+                        keepInstruction = "Always";
+                    }
+                    if(keepMatrix[a] == 7){
+                        keepInstruction = "Free Mulligan";
+                    }
+                    sortedRows.push([a, keepInstruction, (drawMatrix[a]*100).toFixed(1) + "%", successMatrix[a]]);
+                }
+            }
+            sortedRows = sortedRows.sort(compareSuccess);
+
+            // calculate absolute discrete mulligan probabilities
+            mullChances[0] = 1;
+            for(let i = 1; i < 9; i++){
+                mullChances[i] *= mullChances[i-1];
+            }
+            for(let i = 0; i < 8; i++){
+                mullChances[i] -= mullChances[i+1];
+            }
+
+            return [mullSuccess[0], trueMullSuccess[0], sortedRows, mullChances];
+        }
+
+        function mullStratTwoType(countA, reqA, turnA, countB, reqB, turnB, penalty){
+            // check how successful each hand is
+            let successMatrix = [];
+            let drawMatrix = [];
+            for(let a = 0; a <= 7 && a <= countA; a++){
+                let successMatrixA = [];
+                let drawMatrixA = [];
+                for(let b = 0; b <= 7 - a && b <= countB; b++){
+                    let capA = Math.min(reqA, a);
+                    let capB = Math.min(reqB, b);
+                    let draw = drawTwoType(99, countA, countB, 7, a, b);
+                    let success = afterMullTwoType(92, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB);
+                    if(a > reqA){
+                        let oldShare = (drawMatrix[capA][capB])/(drawMatrix[capA][capB] + draw);
+                        let newShare = draw/(drawMatrix[capA][capB] + draw);
+                        successMatrix[capA][capB] = successMatrix[capA][capB] * oldShare + success * newShare;
+                        drawMatrix[capA][capB] += draw;
+                    }
+                    else if(b > reqB){
+                        let oldShare = (drawMatrixA[capB])/(drawMatrixA[capB] + draw);
+                        let newShare = draw/(drawMatrixA[capB] + draw);
+                        successMatrixA[capB] = successMatrixA[capB] * oldShare + success * newShare;
+                        drawMatrixA[capB] += draw;
+                    }
+                    else{
+                        successMatrixA.push(success);
+                        drawMatrixA.push(draw);
+                    }
+                }
+                successMatrix.push(successMatrixA);
+                drawMatrix.push(drawMatrixA);
+            }
+
+            // figure out best hands to mulligan down to when needed
+            let mullMatrix = [];
+            for(let a = 0; a <= reqA; a++){
+                let mullMatrixA = [];
+                for(let b = 0; b <= reqB; b++){
+                    let axis = "X";
+                    let value = 0;
+                    if(a > 0 && successMatrix[a-1][b] > value){
+                        axis = "A";
+                        value = successMatrix[a-1][b];
+                    }
+                    if(b > 0 && successMatrix[a][b-1] > value){
+                        axis = "B";
+                        value = successMatrix[a][b-1];
+                    }
+                    mullMatrixA.push(axis);
+                }
+                mullMatrix.push(mullMatrixA);
+            }
+
+            // check when we want to keep
+            let keepMatrix = [];
+            let mullSuccess = new Array(9).fill(0);
+            let trueMullSuccess = new Array(9).fill(0);
+            let mullChances = new Array(9).fill(0);
+            mullSuccess[8] = successMatrix[0][0];
+            trueMullSuccess[8] = successMatrix[0][0];
+            for(let a = 0; a <= reqA; a++){
+                let keepMatrixA = [];
+                for(let b = 0; b <= reqB; b++){
+                    keepMatrixA.push(1);
+                }
+                keepMatrix.push(keepMatrixA);
+            }
+
+            for(let i = 7; i >= 0; i--){
+                let keep = Math.min(8-i, 7);
+                for(let a = 0; a <= reqA; a++){
+                    for(let b = 0; b <= reqB; b++){
+                        let myA = a;
+                        let myB = b;
+                        while(myA + myB > keep){
+                            if(mullMatrix[myA][myB] == "A"){
+                                myA--;
+                            }
+                            else if(mullMatrix[myA][myB] == "B"){
+                                myB--;
+                            }
+                            else{
+                                myA = 0;
+                                myB = 0;
+                            }
+                        }
+                        if(successMatrix[myA][myB] < mullSuccess[i+1] - Math.min(penalty, i)){
+                            mullSuccess[i] += drawMatrix[a][b] * (mullSuccess[i+1] - Math.min(penalty, i));
+                            trueMullSuccess[i] += drawMatrix[a][b] * (trueMullSuccess[i+1]);
+                            mullChances[i+1] += drawMatrix[a][b];
+                        }
+                        else{
+                            mullSuccess[i] += drawMatrix[a][b] * successMatrix[myA][myB];
+                            trueMullSuccess[i] += drawMatrix[a][b] * successMatrix[myA][myB];
+                            keepMatrix[a][b] = 8-i;
+                        }
+                    }
+                }
+            }
+
+            // create table rows
+            let sortedRows = [];
+            for(let a = 0; a <= reqA; a++){
+                for(let b = 0; b <= reqB; b++){
+                    if(keepMatrix[a][b] > 4){
+                        let keepInstruction = "Going to " + keepMatrix[a][b];
+                        if(keepMatrix[a][b] == 8){
+                            keepInstruction = "Always";
+                        }
+                        if(keepMatrix[a][b] == 7){
+                            keepInstruction = "Free Mulligan";
+                        }
+                        sortedRows.push([a, b, keepInstruction, (drawMatrix[a][b]*100).toFixed(1) + "%", successMatrix[a][b]]);
+                    }
+                }
+            }
+
+            sortedRows = sortedRows.sort(compareSuccess);
+
+            // calculate absolute discrete mulligan probabilities
+            mullChances[0] = 1;
+            for(let i = 1; i < 9; i++){
+                mullChances[i] *= mullChances[i-1];
+            }
+            for(let i = 0; i < 8; i++){
+                mullChances[i] -= mullChances[i+1];
+            }
+
+            return [mullSuccess[0], trueMullSuccess[0], sortedRows, mullChances];
+        }
+
+        function mullStratThreeType(countA, reqA, turnA, countB, reqB, turnB, countC, reqC, turnC, penalty){
+            // check how successful each hand is
+            let successMatrix = [];
+            let drawMatrix = [];
+            for(let a = 0; a <= 7 && a <= countA; a++){
+                let successMatrixA = [];
+                let drawMatrixA = [];
+                for(let b = 0; b <= 7 - a && b <= countB; b++){
+                    let successMatrixB = [];
+                    let drawMatrixB = [];
+                    for(let c = 0; c <= 7 - a - b && c <= countC; c++){
+                        let capA = Math.min(reqA, a);
+                        let capB = Math.min(reqB, b);
+                        let capC = Math.min(reqC, c);
+                        let draw = drawThreeType(99, countA, countB, countC, 7, a, b, c);
+                        let success = afterMullThreeType(92, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB, countC-capC, turnC, reqC-capC);
+                        if(a > reqA){
+                            let oldShare = (drawMatrix[capA][capB][capC])/(drawMatrix[capA][capB][capC] + draw);
+                            let newShare = draw/(drawMatrix[capA][capB][capC] + draw);
+                            successMatrix[capA][capB][capC] = successMatrix[capA][capB][capC] * oldShare + success * newShare;
+                            drawMatrix[capA][capB][capC] += draw;
+                        }
+                        else if(b > reqB){
+                            let oldShare = (drawMatrixA[capB][capC])/(drawMatrixA[capB][capC] + draw);
+                            let newShare = draw/(drawMatrixA[capB][capC] + draw);
+                            successMatrixA[capB][capC] = successMatrixA[capB][capC] * oldShare + success * newShare;
+                            drawMatrixA[capB][capC] += draw;
+                        }
+                        else if(c > reqC){
+                            let oldShare = (drawMatrixB[capC])/(drawMatrixB[capC] + draw);
+                            let newShare = draw/(drawMatrixB[capC] + draw);
+                            successMatrixB[capC] = successMatrixB[capC] * oldShare + success * newShare;
+                            drawMatrixB[capC] += draw;
+                        }
+                        else{
+                            successMatrixB.push(success);
+                            drawMatrixB.push(draw);
+                        }
+                    }
+                    successMatrixA.push(successMatrixB);
+                    drawMatrixA.push(drawMatrixB);
+                }
+                successMatrix.push(successMatrixA);
+                drawMatrix.push(drawMatrixA);
+            }
+
+            // figure out best hands to mulligan down to when needed
+            let mullMatrix = [];
+            for(let a = 0; a <= reqA; a++){
+                let mullMatrixA = [];
+                for(let b = 0; b <= reqB; b++){
+                    let mullMatrixB = [];
+                    for(let c = 0; c <= reqC; c++){
+                        let axis = "X";
+                        let value = 0;
+                        if(a > 0 && successMatrix[a-1][b][c] > value){
+                            axis = "A";
+                            value = successMatrix[a-1][b][c];
+                        }
+                        if(b > 0 && successMatrix[a][b-1][c] > value){
+                            axis = "B";
+                            value = successMatrix[a][b-1][c];
+                        }
+                        if(b > 0 && successMatrix[a][b][c-1] > value){
+                            axis = "B";
+                            value = successMatrix[a][b][c-1];
+                        }
+                        mullMatrixB.push(axis);
+                    }
+                    mullMatrixA.push(mullMatrixB);
+                }
+                mullMatrix.push(mullMatrixA);
+            }
+
+            // check when we want to keep
+            let keepMatrix = [];
+            let mullSuccess = new Array(9).fill(0);
+            let trueMullSuccess = new Array(9).fill(0);
+            let mullChances = new Array(9).fill(0);
+            mullSuccess[8] = successMatrix[0][0][0];
+            trueMullSuccess[8] = successMatrix[0][0][0];
+            for(let a = 0; a <= reqA; a++){
+                let keepMatrixA = [];
+                for(let b = 0; b <= reqB; b++){
+                    let keepMatrixB = [];
+                    for(let c = 0; c <= reqC; c++){
+                        keepMatrixB.push(1);
+                    }
+                    keepMatrixA.push(keepMatrixB);
+                }
+                keepMatrix.push(keepMatrixA);
+            }
+
+            for(let i = 7; i >= 0; i--){
+                let keep = Math.min(8-i, 7);
+                for(let a = 0; a <= reqA; a++){
+                    for(let b = 0; b <= reqB; b++){
+                        for(let c = 0; c <= reqC; c++){
+                            let myA = a;
+                            let myB = b;
+                            let myC = c;
+                            while(myA + myB + myC > keep){
+                                if(mullMatrix[myA][myB][myC] == "A"){
+                                    myA--;
+                                }
+                                else if(mullMatrix[myA][myB][myC] == "B"){
+                                    myB--;
+                                }
+                                else if(mullMatrix[myA][myB][myC] == "C"){
+                                    myC--;
+                                }
+                                else{
+                                    myA = 0;
+                                    myB = 0;
+                                    myC = 0;
+                                }
+                            }
+                            if(successMatrix[myA][myB][myC] < mullSuccess[i+1] - Math.min(penalty, i)){
+                                mullSuccess[i] += drawMatrix[a][b][c] * (mullSuccess[i+1] - Math.min(penalty, i));
+                                trueMullSuccess[i] += drawMatrix[a][b][c] * (trueMullSuccess[i+1]);
+                                mullChances[i+1] += drawMatrix[a][b][c];
+                            }
+                            else{
+                                mullSuccess[i] += drawMatrix[a][b][c] * successMatrix[myA][myB][myC];
+                                trueMullSuccess[i] += drawMatrix[a][b][c] * successMatrix[myA][myB][myC];
+                                keepMatrix[a][b][c] = 8-i;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // create table rows
+            let sortedRows = [];
+            for(let a = 0; a <= reqA; a++){
+                for(let b = 0; b <= reqB; b++){
+                    for(let c = 0; c <= reqC; c++){
+                        if(keepMatrix[a][b][c] > 4){
+                            let keepInstruction = "Going to " + keepMatrix[a][b][c];
+                            if(keepMatrix[a][b][c] == 8){
+                                keepInstruction = "Always";
+                            }
+                            if(keepMatrix[a][b][c] == 7){
+                                keepInstruction = "Free Mull";
+                            }
+                            sortedRows.push([a, b, c, keepInstruction, (drawMatrix[a][b][c]*100).toFixed(1) + "%", successMatrix[a][b][c]]);
+                        }
+                    }
+                }
+            }
+
+            sortedRows = sortedRows.sort(compareSuccess);
+
+            // calculate absolute discrete mulligan probabilities
+            mullChances[0] = 1;
+            for(let i = 1; i < 9; i++){
+                mullChances[i] *= mullChances[i-1];
+            }
+            for(let i = 0; i < 8; i++){
+                mullChances[i] -= mullChances[i+1];
+            }
+
+            return [mullSuccess[0], trueMullSuccess[0], sortedRows, mullChances];
         }
 
 
@@ -561,23 +952,8 @@
             var turnC = parseFloat(document.getElementById('mull-turn-C').value) || 0;
             var result = document.getElementById('mullstrat-result');
             var penalty = (parseFloat(document.getElementById('mull-penalty').value) / 100) || 0;
-
-            let table = document.getElementById("color-output-table");
-            if(table != null){
-                table.remove();
-            }
-            table = document.createElement("table");
-            table.id = "color-output-table";
-            if(countB == 0){
-                table.appendChild(tableRow(["Type A", "Keep After", "Draw Rate", "Success Rate"], "th", ["","","",""]));
-            }
-            else if(countC == 0){
-                table.appendChild(tableRow(["Type A", "Type B", "Keep After", "Draw Rate", "Success Rate"], "th", ["","","","",""]));
-            }
-            else{
-                table.appendChild(tableRow(["Type A", "Type B", "Type C", "Keep After", "Draw Rate", "Success Rate"], "th", ["","","","","",""]));
-            }
             
+            /*
             // check how successful each hand is
             let successMatrix = [];
             let drawMatrix = [];
@@ -585,7 +961,7 @@
                 if(countB == 0){
                     let capA = Math.min(reqA, a);
                     let draw = drawType(99, countA, 7, a);
-                    let success = mullStratOneType(92, countA-capA, turnA, reqA-capA);
+                    let success = afterMullOneType(92, countA-capA, turnA, reqA-capA);
                     if(a > reqA){
                         successMatrix[reqA] = successMatrix[reqA] * (drawMatrix[reqA])/(drawMatrix[reqA] + draw)
                              + success * (draw)/(drawMatrix[reqA] + draw);
@@ -604,7 +980,7 @@
                             let capA = Math.min(reqA, a);
                             let capB = Math.min(reqB, b);
                             let draw = drawTwoType(99, countA, countB, 7, a, b);
-                            let success = mullStratTwoType(92, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB);
+                            let success = afterMullTwoType(92, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB);
                             if(a > reqA){
                                 let oldShare = (drawMatrix[capA][capB])/(drawMatrix[capA][capB] + draw);
                                 let newShare = draw/(drawMatrix[capA][capB] + draw);
@@ -630,7 +1006,7 @@
                                 let capB = Math.min(reqB, b);
                                 let capC = Math.min(reqC, c);
                                 let draw = drawThreeType(99, countA, countB, countC, 7, a, b, c);
-                                let success = mullStratThreeType(92, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB, countC-capC, turnC, reqC-capC);
+                                let success = afterMullThreeType(92, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB, countC-capC, turnC, reqC-capC);
                                 if(a > reqA){
                                     let oldShare = (drawMatrix[capA][capB][capC])/(drawMatrix[capA][capB][capC] + draw);
                                     let newShare = draw/(drawMatrix[capA][capB][capC] + draw);
@@ -837,17 +1213,6 @@
                 }
             }
 
-            mullChances[0] = 1;
-            for(let i = 1; i < 9; i++){
-                mullChances[i] *= mullChances[i-1];
-            }
-            for(let i = 0; i < 8; i++){
-                mullChances[i] -= mullChances[i+1];
-            }
-
-            result.innerHTML = "Overall success rate: <strong>" + (trueMullSuccess[0] * 100).toFixed(1) + "%</strong>";
-
-            // create table
             let sortedRows = [];
             for(let a = 0; a <= reqA; a++){
                 if(countB == 0){
@@ -893,8 +1258,78 @@
                     }
                 }
             }
-            // sort the rows and put them in the table
+
             sortedRows = sortedRows.sort(compareSuccess);
+
+            // calculate absolute discrete mulligan probabilities
+            mullChances[0] = 1;
+            for(let i = 1; i < 9; i++){
+                mullChances[i] *= mullChances[i-1];
+            }
+            for(let i = 0; i < 8; i++){
+                mullChances[i] -= mullChances[i+1];
+            }
+            */
+            
+
+            // create table rows
+            let functionResults;
+            if(countB == 0){
+                functionResults = mullStratOneType(countA, reqA, turnA, penalty);
+            }
+            else if (countC == 0){
+                functionResults = mullStratTwoType(countA, reqA, turnA, countB, reqB, turnB, penalty);
+            }
+            else{
+                functionResults = mullStratThreeType(countA, reqA, turnA, countB, reqB, turnB, countC, reqC, turnC, penalty);
+            }
+            let success = functionResults[0];
+            let trueSuccess = functionResults[1];
+            let sortedRows = functionResults[2];
+            let mullChances = functionResults[3];
+
+            let resultText = "Overall success rate: <strong>" + (success * 100).toFixed(1);
+            resultText += "%</strong> (<strong>" + (trueSuccess * 100).toFixed(1) + "%</strong> without penalties)";
+
+            if(countB == 0){
+                let functionResultsA = mullStratOneType(countA + 1, reqA, turnA, penalty);
+                resultText += "<br>Adding an extra card of type A would increase this by <strong>" + ((functionResultsA[0] - success)*100).toFixed(2) + "</strong>%";
+            }
+            else if(countC == 0){
+                let functionResultsA = mullStratTwoType(countA + 1, reqA, turnA, countB, reqB, turnB, penalty);
+                let functionResultsB = mullStratTwoType(countA, reqA, turnA, countB + 1, reqB, turnB, penalty);
+                resultText += "<br>Adding an extra card of type A would increase this by <strong>" + ((functionResultsA[0] - success)*100).toFixed(2) + "</strong>%";
+                resultText += "<br>Adding an extra card of type B would increase this by <strong>" + ((functionResultsB[0] - success)*100).toFixed(2) + "</strong>%";
+            }
+            else{
+                let functionResultsA = mullStratThreeType(countA + 1, reqA, turnA, countB, reqB, turnB, countC, reqC, turnC, penalty);
+                let functionResultsB = mullStratThreeType(countA, reqA, turnA, countB + 1, reqB, turnB, countC, reqC, turnC, penalty);
+                let functionResultsC = mullStratThreeType(countA, reqA, turnA, countB, reqB, turnB, countC + 1, reqC, turnC, penalty);
+                resultText += "<br>Adding an extra card of type A would increase this by <strong>" + ((functionResultsA[0] - success)*100).toFixed(2) + "</strong>%";
+                resultText += "<br>Adding an extra card of type B would increase this by <strong>" + ((functionResultsB[0] - success)*100).toFixed(2) + "</strong>%";
+                resultText += "<br>Adding an extra card of type C would increase this by <strong>" + ((functionResultsC[0] - success)*100).toFixed(2) + "</strong>%";
+            }
+            
+            
+            result.innerHTML = resultText;
+            
+            // create table
+            let table = document.getElementById("color-output-table");
+            if(table != null){
+                table.remove();
+            }
+            table = document.createElement("table");
+            table.id = "color-output-table";
+            if(countB == 0){
+                table.appendChild(tableRow(["Type A", "Keep After", "Draw Rate", "Success Rate"], "th", ["","","",""]));
+            }
+            else if(countC == 0){
+                table.appendChild(tableRow(["Type A", "Type B", "Keep After", "Draw Rate", "Success Rate"], "th", ["","","","",""]));
+            }
+            else{
+                table.appendChild(tableRow(["Type A", "Type B", "Type C", "Keep After", "Draw Rate", "Success Rate"], "th", ["","","","","",""]));
+            }   
+
             for(let i = 0; i < sortedRows.length; i++){
                 sortedRows[i][sortedRows[i].length - 1] = (sortedRows[i][sortedRows[i].length - 1]*100).toFixed(1) + "%";
                 table.appendChild(tableRow(sortedRows[i], "td", new Array(sortedRows[i].length).fill("")));
