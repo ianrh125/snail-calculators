@@ -37,7 +37,7 @@
             padding: 10px; /* giving text room */
             margin: 10px; /* spacing calculators apart */
             width: 500px; /* change if needed,  */
-            float:left;
+            /*float:left;*/
             /*display: inline-block; /* let them show side by side */
         }
         .result-box{
@@ -132,6 +132,9 @@
             padding-left: 6px;
             padding-right: 6px;
             background-color: #fcc;
+        }
+        .column{
+            float:left;
         }
         /*summary::marker{
             float:right;
@@ -1433,110 +1436,114 @@
             document.getElementById("mullstrat-result-box").appendChild(graph);
         }
     </script>
-    <div class = "calculator" name="mullstrat">
-        <p class="title">Mulligan Strategy Calculator</p>
-        <p class="prompt">How many cards of each desired category are you running?</p>
-        <p class="prompt">
-            <input type="text" class="mull-cat" id="mull-cat-A" placeholder="Category A">
-            <span class="mull-req hidden">
-                I want to draw <input type="text" id="mull-count-A" value="1" style="width: 30px"> 
-                of these by turn <input type="text" id="mull-turn-A" value="1" style="width: 30px">
-            </span>
-        </p>
-        <p class="prompt" style="margin-top: 5px">
-            <input type="text" class="mull-cat" id="mull-cat-B" placeholder="Category B">
-            <span class="mull-req hidden">
-                I want to draw <input type="text" id="mull-count-B" value="1" style="width: 30px"> 
-                of these by turn <input type="text" id="mull-turn-B" value="1" style="width: 30px">
-            </span>
-        </p>
-        <p class="prompt" style="margin-top: 5px">
-            <input type="text" class="mull-cat" id="mull-cat-C" placeholder="Category C">
-            <span class="mull-req hidden">
-                I want to draw <input type="text" id="mull-count-C" value="1" style="width: 30px"> 
-                of these by turn <input type="text" id="mull-turn-C" value="1" style="width: 30px">
-            </span>
-        </p>
-        <p class="prompt">Penalty for going down a card: <input type="text" id="mull-penalty" value="15" style="width: 30px">%</p>
-        <p>
-            <input type="button" value="Compute" onclick="mullStrat()">
-        </p>
-        <div class="result-box" id="mullstrat-result-box">
-            <p id='mullstrat-result' class="result-text"></p>
+    <div class="column" name="col1">
+        <div class="calculator" name="drawby">
+            <p class="title"> Card Type Drawn Probability Calculator</p>
+            <p class="prompt"> How many cards of the type are you running?</p>
+            <input type="text" id="N" ,="" name="Number">
+            <p class="prompt"> What turn do you want one by?</p>
+            <input type="text" id="T" ,="" name="Turn">
+            <p>
+            <input type="button" value="Compute" onclick="drawby()">
+            </p>
+            <div class="result-box">
+                <p class="result-text"> Probability: </p>
+                <p class="result-number" id="result" name="prob" p=""></p>
+            </div>
+        </div>
+        <div class="calculator" name="landmiss">
+            <p class="title"> Land Drop Miss Calculator</p>
+            <p class="prompt"> How many lands are you running? </p>
+            <input type="text" id="L" ,="" name="Lands">
+            <p>
+            <input type="button" value="Compute" onclick="miss()">
+            </p>
+            <div class="result-box" id="land-drop-result">
+                <p class="result-text"> Average (arithmetic median) turn to miss a land drop: </p>
+                <p class="result-number" id="result1" name="int" p=""></p>
+                <!--div id="land-drop-graph"></div-->
+            </div>
+        </div>
+        <div class="calculator" name="openinglands">
+            <p class="title"> Lands in Opening Hand</p>
+            <p class="prompt"> How many lands are you running? </p>
+            <input type="text" id="L1" ,="" name="Lands">
+            <p>
+            <input type="button" value="Compute" onclick="openingLands()">
+            </p>
+            <div class="result-box" id="opening-land-result">
+                <p class="result-text"> Average (arithmetic median) number of lands: </p>
+                <p class="result-number" id="result2" name="int" p=""></p>
+            </div>
+        </div>
+        <div class="calculator" name="combodraws">
+            <p class="title"> Draws required to pull off combos</p>
+            <p class="prompt"> How many cards fill the role of each combo piece? </p>
+            <input type="text" id="combodraw-A" placeholder="Piece A" name="Number of Cards in Deck">
+            <input type="text" id="combodraw-B" placeholder="Piece B" name="Number of Cards in Deck">
+            <input type="text" id="combodraw-C" placeholder="Piece C" name="Number of Cards in Deck">
+            <p>
+            <input type="button" value="Compute" onclick="comboDraws()">
+            </p>
+            <div class="result-box" id="combodraw-result">
+                <p class="result-text">Average (arithmetic median) number of draws required: </p>
+                <p class="result-number" id="combodraw-result-num" name="int" p=""></p>
+            </div>
         </div>
     </div>
-    <div class="calculator" name="drawby">
-        <p class="title"> Card Type Drawn Probability Calculator</p>
-        <p class="prompt"> How many cards of the type are you running?</p>
-        <input type="text" id="N" ,="" name="Number">
-        <p class="prompt"> What turn do you want one by?</p>
-        <input type="text" id="T" ,="" name="Turn">
-        <p>
-        <input type="button" value="Compute" onclick="drawby()">
-        </p>
-        <div class="result-box">
-            <p class="result-text"> Probability: </p>
-            <p class="result-number" id="result" name="prob" p=""></p>
+    <div class="column" name="col2">
+        <div class = "calculator" name="mullstrat">
+            <p class="title">Mulligan Strategy Calculator</p>
+            <p class="prompt">How many cards of each desired category are you running?</p>
+            <p class="prompt">
+                <input type="text" class="mull-cat" id="mull-cat-A" placeholder="Category A">
+                <span class="mull-req hidden">
+                    I want to draw <input type="text" id="mull-count-A" value="1" style="width: 30px"> 
+                    of these by turn <input type="text" id="mull-turn-A" value="1" style="width: 30px">
+                </span>
+            </p>
+            <p class="prompt" style="margin-top: 5px">
+                <input type="text" class="mull-cat" id="mull-cat-B" placeholder="Category B">
+                <span class="mull-req hidden">
+                    I want to draw <input type="text" id="mull-count-B" value="1" style="width: 30px"> 
+                    of these by turn <input type="text" id="mull-turn-B" value="1" style="width: 30px">
+                </span>
+            </p>
+            <p class="prompt" style="margin-top: 5px">
+                <input type="text" class="mull-cat" id="mull-cat-C" placeholder="Category C">
+                <span class="mull-req hidden">
+                    I want to draw <input type="text" id="mull-count-C" value="1" style="width: 30px"> 
+                    of these by turn <input type="text" id="mull-turn-C" value="1" style="width: 30px">
+                </span>
+            </p>
+            <p class="prompt">Penalty for going down a card: <input type="text" id="mull-penalty" value="15" style="width: 30px">%</p>
+            <p>
+                <input type="button" value="Compute" onclick="mullStrat()">
+            </p>
+            <div class="result-box" id="mullstrat-result-box">
+                <p id='mullstrat-result' class="result-text"></p>
+            </div>
         </div>
-    </div>
-    <div class="calculator" name="landmiss">
-        <p class="title"> Land Drop Miss Calculator</p>
-        <p class="prompt"> How many lands are you running? </p>
-        <input type="text" id="L" ,="" name="Lands">
-        <p>
-        <input type="button" value="Compute" onclick="miss()">
-        </p>
-        <div class="result-box" id="land-drop-result">
-            <p class="result-text"> Average (arithmetic median) turn to miss a land drop: </p>
-            <p class="result-number" id="result1" name="int" p=""></p>
-            <!--div id="land-drop-graph"></div-->
-        </div>
-    </div>
-    <div class="calculator" name="openinglands">
-        <p class="title"> Lands in Opening Hand</p>
-        <p class="prompt"> How many lands are you running? </p>
-        <input type="text" id="L1" ,="" name="Lands">
-        <p>
-        <input type="button" value="Compute" onclick="openingLands()">
-        </p>
-        <div class="result-box" id="opening-land-result">
-            <p class="result-text"> Average (arithmetic median) number of lands: </p>
-            <p class="result-number" id="result2" name="int" p=""></p>
-        </div>
-    </div>
-    <div class="calculator" name="requiredmulls3type">
-        <p class="title"> Mulligans for up to 3 card types</p>
-        <p class="prompt"> How many cards of each type are you running? </p>
-        <input type="text" id="mullcount-3A" placeholder="Type A" name="Number of Cards in Deck">
-        <input type="text" id="mullcount-3B" placeholder="Type B" name="Number of Cards in Deck">
-        <input type="text" id="mullcount-3C" placeholder="Type C" name="Number of Cards in Deck">
-        <p class="prompt"> How many of each do you want to draw in your opening hand? </p>
-        <input type="text" id="mulltarget-3A" placeholder="Type A" name="Number of Cards Drawn">
-        <input type="text" id="mulltarget-3B" placeholder="Type B" name="Number of Cards Drawn">
-        <input type="text" id="mulltarget-3C" placeholder="Type C" name="Number of Cards Drawn">
-        <p>
-        <input type="checkbox" id="cumulative-3" name = "cumulative-3">
-        <label for="cumulative-3">Show cumulative probability</label></p>
-        <p>
-        <input type="button" value="Compute" onclick="requiredMullsThreeType()">
-        </p>
-        <div class="result-box" id="required-mull-3-result">
-            <p class="result-text">Average (arithmetic median) number of mulligans: </p>
-            <p class="result-number" id="result-mull-3" name="int" p=""></p>
-        </div>
-    </div>
-    <div class="calculator" name="combodraws">
-        <p class="title"> Draws required to pull off combos</p>
-        <p class="prompt"> How many cards fill the role of each combo piece? </p>
-        <input type="text" id="combodraw-A" placeholder="Piece A" name="Number of Cards in Deck">
-        <input type="text" id="combodraw-B" placeholder="Piece B" name="Number of Cards in Deck">
-        <input type="text" id="combodraw-C" placeholder="Piece C" name="Number of Cards in Deck">
-        <p>
-        <input type="button" value="Compute" onclick="comboDraws()">
-        </p>
-        <div class="result-box" id="combodraw-result">
-            <p class="result-text">Average (arithmetic median) number of draws required: </p>
-            <p class="result-number" id="combodraw-result-num" name="int" p=""></p>
+        <div class="calculator" name="requiredmulls3type">
+            <p class="title"> Mulligans for up to 3 card types</p>
+            <p class="prompt"> How many cards of each type are you running? </p>
+            <input type="text" id="mullcount-3A" placeholder="Type A" name="Number of Cards in Deck">
+            <input type="text" id="mullcount-3B" placeholder="Type B" name="Number of Cards in Deck">
+            <input type="text" id="mullcount-3C" placeholder="Type C" name="Number of Cards in Deck">
+            <p class="prompt"> How many of each do you want to draw in your opening hand? </p>
+            <input type="text" id="mulltarget-3A" placeholder="Type A" name="Number of Cards Drawn">
+            <input type="text" id="mulltarget-3B" placeholder="Type B" name="Number of Cards Drawn">
+            <input type="text" id="mulltarget-3C" placeholder="Type C" name="Number of Cards Drawn">
+            <p>
+            <input type="checkbox" id="cumulative-3" name = "cumulative-3">
+            <label for="cumulative-3">Show cumulative probability</label></p>
+            <p>
+            <input type="button" value="Compute" onclick="requiredMullsThreeType()">
+            </p>
+            <div class="result-box" id="required-mull-3-result">
+                <p class="result-text">Average (arithmetic median) number of mulligans: </p>
+                <p class="result-number" id="result-mull-3" name="int" p=""></p>
+            </div>
         </div>
     </div>
 </body>
