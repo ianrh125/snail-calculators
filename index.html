@@ -49,7 +49,7 @@
             border: 1px solid black;
             padding: 5px;
             margin: 5px;
-            min-height: 100px;
+            /*min-height: 100px;*/
             min-width: 464px;
         }
         .graph-bar{
@@ -102,6 +102,51 @@
             padding-left: 5px;
             padding-right: 5px;
         }
+        input{
+            max-width: 150px;
+        }
+        details>summary {
+            list-style: none;
+        }
+        summary::-webkit-details-marker {
+            display: none;
+        }
+        summary{
+            padding-bottom:2px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        summary::after {
+            content: '+';
+            float:right;
+            font-weight: bold;
+            font-size:15px;
+            padding-left: 4px;
+            padding-right: 4px;
+            border: 1px solid black;
+            background-color: #cfc;
+        }
+        details[open] summary:after {
+            content: "-";
+            padding-left: 6px;
+            padding-right: 6px;
+            background-color: #fcc;
+        }
+        /*summary::marker{
+            float:right;
+        }
+        details:first-of-type summary::marker,
+        :is(::-webkit-details-marker) {
+            content: "+ ";
+            font-family: monospace;
+            color: red;
+            font-weight: bold;
+        }
+
+        details[open]:first-of-type summary::marker {
+            content: "- ";
+        }*/
     </style>
 </head>
 <body>
@@ -248,7 +293,7 @@
                 z=z+1
                 
             }
-            let graph = createBarGraph("opening-land-graph", zList, pList, "Number Drawn in Opening Hand");
+            let graph = createBarGraph("opening-land-graph", "Distribution of Lands", zList, pList, "Number Drawn in Opening Hand");
             document.getElementById("opening-land-result").appendChild(graph);
         }
         
@@ -334,8 +379,8 @@
             let targetA = Math.min(countA, 1);
             let targetB = Math.min(countB, 1);
             let targetC = Math.min(countC, 1);
-            for(let draws = 0; draws < 95; draws++){
-                let p = drawThreeTypeMin(99, countA, countB, countC, draws, targetA, targetB, targetC);
+            for(let draws = 0; draws < 90; draws++){
+                let p = drawThreeTypeMin(99, countA, countB, countC, draws + 7, targetA, targetB, targetC);
                 if(p < .5){
                     result[textType]= draws;
                 }
@@ -347,10 +392,24 @@
             if(graph != null){
                 graph.remove();
             }
-            graph = document.createElement("canvas");
+            graph = document.createElement("div");
             graph.id = "combodraw-graph";
+            graph.classList.add("bar-graph");
+            
+            let details = document.createElement("details");
+            details.id = "combodraw-graph-details";
+            details.setAttribute("open", "");
+            graph.appendChild(details);
 
-            new Chart(graph, {
+            let summary = document.createElement("summary");
+            summary.id = "combodraw-graph-summary";
+            summary.innerText = "Probability of Combo Draws";
+            details.appendChild(summary);
+
+            canvas = document.createElement("canvas");
+            canvas.id = "combodraw-graph-canvas";
+
+            new Chart(canvas, {
                 type: 'line',
                 data: {
                 labels: zList,
@@ -386,11 +445,12 @@
                     }
                 }
             });
+            details.appendChild(canvas);
             document.getElementById("combodraw-result").appendChild(graph);
         }
         
         // takes the probability of a certain hand and creates a bargraph for the mulligans required to attain it
-        function requiredMullGraph(handP, graphName, target, result, textType){
+        function requiredMullGraph(handP, graphID, target, result, textType){
             let p = handP;
             let pTotal = 0;
             if(p > .5){
@@ -413,11 +473,11 @@
             pList.push(1-pTotal);
             
 
-            return createBarGraph(graphName, zList, pList, "Required Number of Mulligans");
+            return createBarGraph(graphID, "Distribution of Mulligans", zList, pList, "Required Number of Mulligans");
         }
 
         // Similar to requiredMullGraph, interprets the data slightly differently to show the cumulative distribution
-        function requiredMullGraphCumulative(handP, graphName, target, result, textType){
+        function requiredMullGraphCumulative(handP, graphID, target, result, textType){
             let p = handP;
             let pTotal = 0;
             if(p > .5){
@@ -437,18 +497,28 @@
                 p *= 1 - handP;
             }
 
-            return createBarGraph(graphName, zList, pList, "Number of Mulligans");
+            return createBarGraph(graphID, "Distribution of Mulligans", zList, pList, "Number of Mulligans");
         }
 
         // creates a bar graph using my proprietary methods
-        function createBarGraph(graphName, graphLabels, graphValues, xLabelText){
-            let graph = document.getElementById(graphName);
+        function createBarGraph(graphID, graphName, graphLabels, graphValues, xLabelText){
+            let graph = document.getElementById(graphID);
             if(graph != null){
                 graph.remove();
             }
             graph = document.createElement("div");
-            graph.id = graphName;
+            graph.id = graphID;
             graph.classList.add("bar-graph");
+
+            let details = document.createElement("details");
+            details.id = graphID + "-details";
+            details.setAttribute("open", "");
+            graph.appendChild(details);
+
+            let summary = document.createElement("summary");
+            summary.id = graphID + "-summary";
+            summary.innerText = graphName;
+            details.appendChild(summary);
             let z = 0;
 
             let heightScale = 250/graphValues.reduce((a, b) => Math.max(a, b), -Infinity)
@@ -464,7 +534,7 @@
                 let bar = document.createElement("div");
                 bar.id = "bar-" + z.toString();
                 bar.classList.add("graph-bar");
-                graph.appendChild(bar);
+                details.appendChild(bar);
 
                 let textDiv = document.createElement("div");
                 textDiv.innerText = Math.round(p * 100).toString() + "%";
@@ -487,7 +557,7 @@
             let xLabel = document.createElement("div");
             xLabel.innerText = xLabelText;
             xLabel.setAttribute("style", "font-size: 16px; text-align: center");
-            graph.appendChild(xLabel);
+            details.appendChild(xLabel);
 
             return graph;
         }
@@ -1359,10 +1429,10 @@
                 mullChances.pop();
             }
 
-            let graph = createBarGraph("mullstrat-graph", [...mullChances.keys()], mullChances, "Required Number of Mulligans");
+            let graph = createBarGraph("mullstrat-graph", "Distribution of Mulligans", [...mullChances.keys()], mullChances, "Required Number of Mulligans");
             document.getElementById("mullstrat-result-box").appendChild(graph);
         }
-        </script>
+    </script>
     <div class = "calculator" name="mullstrat">
         <p class="title">Mulligan Strategy Calculator</p>
         <p class="prompt">How many cards of each desired category are you running?</p>
