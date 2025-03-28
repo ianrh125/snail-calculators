@@ -683,6 +683,7 @@
             for(let i = 1; i < 9; i++){
                 mullChances[i] *= mullChances[i-1];
             }
+            let cumMullChances = mullChances.slice();
             for(let i = 0; i < 8; i++){
                 mullChances[i] -= mullChances[i+1];
             }
@@ -690,7 +691,8 @@
             // create table rows
             let sortedRows = [];
             for(let a = 0; a <= reqA && a <= 7; a++){
-                if(keepMatrix[a] > 4){
+                //only show hands that will be kept in over 1% of games, or are drawn more than 10% of the time
+                if(cumMullChances[8-keepMatrix[a]] * drawMatrix[a] > 0.01 || drawMatrix[a] > 0.1){
                     let keepInstruction = "Going to " + keepMatrix[a];
                     if(keepMatrix[a] == 8){
                         keepInstruction = "Always";
@@ -698,19 +700,13 @@
                     if(keepMatrix[a] == 7){
                         keepInstruction = "Free Mulligan";
                     }
+                    if(cumMullChances[8-keepMatrix[a]] * drawMatrix[a] < 0.001){
+                        keepInstruction = "Never"
+                    }
                     sortedRows.push([a, keepInstruction, (drawMatrix[a]*100).toFixed(1) + "%", successMatrix[a]]);
                 }
             }
             sortedRows = sortedRows.sort(compareSuccess);
-
-            // calculate absolute discrete mulligan probabilities
-            mullChances[0] = 1;
-            for(let i = 1; i < 9; i++){
-                mullChances[i] *= mullChances[i-1];
-            }
-            for(let i = 0; i < 8; i++){
-                mullChances[i] -= mullChances[i+1];
-            }
 
             return [mullSuccess[0], trueMullSuccess[0], sortedRows, mullChances];
         }
@@ -815,11 +811,22 @@
                 }
             }
 
+            // calculate absolute discrete mulligan probabilities
+            mullChances[0] = 1;
+            for(let i = 1; i < 9; i++){
+                mullChances[i] *= mullChances[i-1];
+            }
+            let cumMullChances = mullChances.slice();
+            for(let i = 0; i < 8; i++){
+                mullChances[i] -= mullChances[i+1];
+            }
+
             // create table rows
             let sortedRows = [];
             for(let a = 0; a <= reqA && a <= 7; a++){
                 for(let b = 0; b <= reqB && a + b <= 7; b++){
-                    if(keepMatrix[a][b] > 4){
+                    //only show hands that will be kept in over 1% of games, or are drawn more than 10% of the time
+                    if(cumMullChances[8-keepMatrix[a][b]] * drawMatrix[a][b] > 0.01 || drawMatrix[a][b] > 0.1){
                         let keepInstruction = "Going to " + keepMatrix[a][b];
                         if(keepMatrix[a][b] == 8){
                             keepInstruction = "Always";
@@ -827,21 +834,15 @@
                         if(keepMatrix[a][b] == 7){
                             keepInstruction = "Free Mulligan";
                         }
+                        if(cumMullChances[8-keepMatrix[a][b]] * drawMatrix[a][b] < 0.001){
+                            keepInstruction = "Never"
+                        }
                         sortedRows.push([a, b, keepInstruction, (drawMatrix[a][b]*100).toFixed(1) + "%", successMatrix[a][b]]);
                     }
                 }
             }
 
             sortedRows = sortedRows.sort(compareSuccess);
-
-            // calculate absolute discrete mulligan probabilities
-            mullChances[0] = 1;
-            for(let i = 1; i < 9; i++){
-                mullChances[i] *= mullChances[i-1];
-            }
-            for(let i = 0; i < 8; i++){
-                mullChances[i] -= mullChances[i+1];
-            }
 
             return [mullSuccess[0], trueMullSuccess[0], sortedRows, mullChances];
         }
@@ -978,18 +979,32 @@
                 }
             }
 
+            // calculate absolute discrete mulligan probabilities
+            mullChances[0] = 1;
+            for(let i = 1; i < 9; i++){
+                mullChances[i] *= mullChances[i-1];
+            }
+            let cumMullChances = mullChances.slice();
+            for(let i = 0; i < 8; i++){
+                mullChances[i] -= mullChances[i+1];
+            }
+
             // create table rows
             let sortedRows = [];
             for(let a = 0; a <= reqA && a <= 7; a++){
                 for(let b = 0; b <= reqB && a + b <= 7; b++){
                     for(let c = 0; c <= reqC && a + b + c <= 7; c++){
-                        if(keepMatrix[a][b][c] > 4){
+                        //only show hands that will be kept in over 1% of games, or are drawn more than 10% of the time
+                        if(cumMullChances[8-keepMatrix[a][b][c]] * drawMatrix[a][b][c] > 0.01 || drawMatrix[a][b][c] > 0.1){
                             let keepInstruction = "Going to " + keepMatrix[a][b][c];
                             if(keepMatrix[a][b][c] == 8){
                                 keepInstruction = "Always";
                             }
                             if(keepMatrix[a][b][c] == 7){
                                 keepInstruction = "Free Mull";
+                            }
+                            if(cumMullChances[8-keepMatrix[a][b][c]] * drawMatrix[a][b][c] < 0.001){
+                                keepInstruction = "Never"
                             }
                             sortedRows.push([a, b, c, keepInstruction, (drawMatrix[a][b][c]*100).toFixed(1) + "%", successMatrix[a][b][c]]);
                         }
@@ -998,15 +1013,6 @@
             }
 
             sortedRows = sortedRows.sort(compareSuccess);
-
-            // calculate absolute discrete mulligan probabilities
-            mullChances[0] = 1;
-            for(let i = 1; i < 9; i++){
-                mullChances[i] *= mullChances[i-1];
-            }
-            for(let i = 0; i < 8; i++){
-                mullChances[i] -= mullChances[i+1];
-            }
 
             return [mullSuccess[0], trueMullSuccess[0], sortedRows, mullChances];
         }
