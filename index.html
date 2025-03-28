@@ -641,7 +641,7 @@
 
             // figure out best hands to mulligan down to when needed
             let mullMatrix = [];
-            for(let a = 0; a <= reqA; a++){
+            for(let a = 0; a <= reqA && a <= 7; a++){
                 if(a > 0){
                     mullMatrix.push("A");
                 }
@@ -657,13 +657,13 @@
             let mullChances = new Array(9).fill(0);
             mullSuccess[8] = successMatrix[0];
             trueMullSuccess[8] = successMatrix[0];
-            for(let a = 0; a <= reqA; a++){
+            for(let a = 0; a <= reqA && a <= 7; a++){
                 keepMatrix.push(1);
             }
 
             for(let i = 7; i >= 0; i--){
                 let keep = Math.min(8-i, 7);
-                for(let a = 0; a <= reqA; a++){
+                for(let a = 0; a <= reqA && a <= 7; a++){
                     let myA = Math.min(a, keep);
                     if(successMatrix[myA] < mullSuccess[i+1] - Math.min(penalty, i)){
                         mullSuccess[i] += drawMatrix[a] * (mullSuccess[i+1] - Math.min(penalty, i));
@@ -689,7 +689,7 @@
 
             // create table rows
             let sortedRows = [];
-            for(let a = 0; a <= reqA; a++){
+            for(let a = 0; a <= reqA && a <= 7; a++){
                 if(keepMatrix[a] > 4){
                     let keepInstruction = "Going to " + keepMatrix[a];
                     if(keepMatrix[a] == 8){
@@ -750,9 +750,9 @@
 
             // figure out best hands to mulligan down to when needed
             let mullMatrix = [];
-            for(let a = 0; a <= reqA; a++){
+            for(let a = 0; a <= reqA && a <= 7; a++){
                 let mullMatrixA = [];
-                for(let b = 0; b <= reqB; b++){
+                for(let b = 0; b <= reqB && a + b <= 7; b++){
                     let axis = "X";
                     let value = 0;
                     if(a > 0 && successMatrix[a-1][b] > value){
@@ -775,9 +775,9 @@
             let mullChances = new Array(9).fill(0);
             mullSuccess[8] = successMatrix[0][0];
             trueMullSuccess[8] = successMatrix[0][0];
-            for(let a = 0; a <= reqA; a++){
+            for(let a = 0; a <= reqA && a <= 7; a++){
                 let keepMatrixA = [];
-                for(let b = 0; b <= reqB; b++){
+                for(let b = 0; b <= reqB && a + b <= 7; b++){
                     keepMatrixA.push(1);
                 }
                 keepMatrix.push(keepMatrixA);
@@ -785,8 +785,8 @@
 
             for(let i = 7; i >= 0; i--){
                 let keep = Math.min(8-i, 7);
-                for(let a = 0; a <= reqA; a++){
-                    for(let b = 0; b <= reqB; b++){
+                for(let a = 0; a <= reqA && a <= 7; a++){
+                    for(let b = 0; b <= reqB && a + b <= 7; b++){
                         let myA = a;
                         let myB = b;
                         while(myA + myB > keep){
@@ -817,8 +817,8 @@
 
             // create table rows
             let sortedRows = [];
-            for(let a = 0; a <= reqA; a++){
-                for(let b = 0; b <= reqB; b++){
+            for(let a = 0; a <= reqA && a <= 7; a++){
+                for(let b = 0; b <= reqB && a + b <= 7; b++){
                     if(keepMatrix[a][b] > 4){
                         let keepInstruction = "Going to " + keepMatrix[a][b];
                         if(keepMatrix[a][b] == 8){
@@ -894,11 +894,11 @@
 
             // figure out best hands to mulligan down to when needed
             let mullMatrix = [];
-            for(let a = 0; a <= reqA; a++){
+            for(let a = 0; a <= reqA && a <= 7; a++){
                 let mullMatrixA = [];
-                for(let b = 0; b <= reqB; b++){
+                for(let b = 0; b <= reqB && a + b <= 7; b++){
                     let mullMatrixB = [];
-                    for(let c = 0; c <= reqC; c++){
+                    for(let c = 0; c <= reqC && a + b + c <= 7; c++){
                         let axis = "X";
                         let value = 0;
                         if(a > 0 && successMatrix[a-1][b][c] > value){
@@ -927,11 +927,11 @@
             let mullChances = new Array(9).fill(0);
             mullSuccess[8] = successMatrix[0][0][0];
             trueMullSuccess[8] = successMatrix[0][0][0];
-            for(let a = 0; a <= reqA; a++){
+            for(let a = 0; a <= reqA && a <= 7; a++){
                 let keepMatrixA = [];
-                for(let b = 0; b <= reqB; b++){
+                for(let b = 0; b <= reqB && a + b <= 7; b++){
                     let keepMatrixB = [];
-                    for(let c = 0; c <= reqC; c++){
+                    for(let c = 0; c <= reqC && a + b + c <= 7; c++){
                         keepMatrixB.push(1);
                     }
                     keepMatrixA.push(keepMatrixB);
@@ -941,9 +941,9 @@
 
             for(let i = 7; i >= 0; i--){
                 let keep = Math.min(8-i, 7);
-                for(let a = 0; a <= reqA; a++){
-                    for(let b = 0; b <= reqB; b++){
-                        for(let c = 0; c <= reqC; c++){
+                for(let a = 0; a <= reqA && a <= 7; a++){
+                    for(let b = 0; b <= reqB && a + b <= 7; b++){
+                        for(let c = 0; c <= reqC && a + b + c <= 7; c++){
                             let myA = a;
                             let myB = b;
                             let myC = c;
@@ -980,9 +980,9 @@
 
             // create table rows
             let sortedRows = [];
-            for(let a = 0; a <= reqA; a++){
-                for(let b = 0; b <= reqB; b++){
-                    for(let c = 0; c <= reqC; c++){
+            for(let a = 0; a <= reqA && a <= 7; a++){
+                for(let b = 0; b <= reqB && a + b <= 7; b++){
+                    for(let c = 0; c <= reqC && a + b + c <= 7; c++){
                         if(keepMatrix[a][b][c] > 4){
                             let keepInstruction = "Going to " + keepMatrix[a][b][c];
                             if(keepMatrix[a][b][c] == 8){
