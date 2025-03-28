@@ -27,7 +27,7 @@
             margin-bottom: 5px;
         }
         .result-text{
-            color: green;
+            color: #060;
             display: inline-block; /* allows this and result to display in one line */
             margin: 0px;
         }
@@ -113,7 +113,7 @@
             padding-right: 5px;
         }
         input{
-            max-width: 150px;
+            max-width: 32%;
         }
         details>summary {
             list-style: none;
@@ -1461,7 +1461,6 @@
             <div class="result-box" id="land-drop-result">
                 <p class="result-text"> Average (arithmetic median) turn to miss a land drop: </p>
                 <p class="result-number" id="result1" name="int" p=""></p>
-                <!--div id="land-drop-graph"></div-->
             </div>
         </div>
         <div class="calculator" name="openinglands">
@@ -1495,23 +1494,23 @@
         <div class = "calculator" name="mullstrat">
             <div class="inner-calc">
                 <p class="title">Mulligan Strategy Calculator</p>
-                <p class="prompt">How many cards of each desired category are you running?</p>
+                <p class="prompt">How many cards of each type are you running? <br>(ex. A = lands, B = ramp)</p>
                 <p class="prompt">
-                    <input type="text" class="mull-cat" id="mull-cat-A" placeholder="Category A">
+                    <input type="text" class="mull-cat" id="mull-cat-A" placeholder="Type A">
                     <span class="mull-req hidden">
                         I want to draw <input type="text" id="mull-count-A" value="1" style="width: 30px"> 
                         of these by turn <input type="text" id="mull-turn-A" value="1" style="width: 30px">
                     </span>
                 </p>
                 <p class="prompt" style="margin-top: 5px">
-                    <input type="text" class="mull-cat" id="mull-cat-B" placeholder="Category B">
+                    <input type="text" class="mull-cat" id="mull-cat-B" placeholder="Type B">
                     <span class="mull-req hidden">
                         I want to draw <input type="text" id="mull-count-B" value="1" style="width: 30px"> 
                         of these by turn <input type="text" id="mull-turn-B" value="1" style="width: 30px">
                     </span>
                 </p>
                 <p class="prompt" style="margin-top: 5px">
-                    <input type="text" class="mull-cat" id="mull-cat-C" placeholder="Category C">
+                    <input type="text" class="mull-cat" id="mull-cat-C" placeholder="Type C">
                     <span class="mull-req hidden">
                         I want to draw <input type="text" id="mull-count-C" value="1" style="width: 30px"> 
                         of these by turn <input type="text" id="mull-turn-C" value="1" style="width: 30px">
