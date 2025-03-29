@@ -665,8 +665,8 @@
                 let keep = Math.min(8-i, 7);
                 for(let a = 0; a <= reqA && a <= 7; a++){
                     let myA = Math.min(a, keep);
-                    if(successMatrix[myA] < mullSuccess[i+1] - Math.min(penalty, i)){
-                        mullSuccess[i] += drawMatrix[a] * (mullSuccess[i+1] - Math.min(penalty, i));
+                    if(successMatrix[myA] < mullSuccess[i+1] - (Math.min(penalty, i) * (i + 3) / 4)){
+                        mullSuccess[i] += drawMatrix[a] * (mullSuccess[i+1] - (Math.min(penalty, i) * (i + 3) / 4));
                         trueMullSuccess[i] += drawMatrix[a] * trueMullSuccess[i+1];
                         mullChances[i+1] += drawMatrix[a];
                     }
@@ -797,8 +797,8 @@
                                 myB = 0;
                             }
                         }
-                        if(successMatrix[myA][myB] < mullSuccess[i+1] - Math.min(penalty, i)){
-                            mullSuccess[i] += drawMatrix[a][b] * (mullSuccess[i+1] - Math.min(penalty, i));
+                        if(successMatrix[myA][myB] < mullSuccess[i+1] - (Math.min(penalty, i) * (i + 3) / 4)){
+                            mullSuccess[i] += drawMatrix[a][b] * (mullSuccess[i+1] - (Math.min(penalty, i) * (i + 3) / 4));
                             trueMullSuccess[i] += drawMatrix[a][b] * (trueMullSuccess[i+1]);
                             mullChances[i+1] += drawMatrix[a][b];
                         }
@@ -964,8 +964,8 @@
                                     myC = 0;
                                 }
                             }
-                            if(successMatrix[myA][myB][myC] < mullSuccess[i+1] - Math.min(penalty, i)){
-                                mullSuccess[i] += drawMatrix[a][b][c] * (mullSuccess[i+1] - Math.min(penalty, i));
+                            if(successMatrix[myA][myB][myC] < mullSuccess[i+1] - (Math.min(penalty, i) * (i + 3) / 4)){
+                                mullSuccess[i] += drawMatrix[a][b][c] * (mullSuccess[i+1] - (Math.min(penalty, i) * (i + 3) / 4));
                                 trueMullSuccess[i] += drawMatrix[a][b][c] * (trueMullSuccess[i+1]);
                                 mullChances[i+1] += drawMatrix[a][b][c];
                             }
