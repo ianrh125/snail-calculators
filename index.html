@@ -220,8 +220,9 @@
                 N = parseFloat(document.getElementById('N').value) || 0,
                 T = parseFloat(document.getElementById('T').value) || 0,
                 result = document.getElementById('result');
+            var deckSize = parseFloat(document.getElementById('drawby-deck-size').value) || 99;
             //let x=(1-(choose(99-N,7+T)/choose(99,7+T)));
-            let x = (drawTypeMin(99, N, T+7, 1));
+            let x = (drawTypeMin(deckSize, N, T+7, 1));
             result[textType] = x.toLocaleString(undefined,{style: 'percent', minimumFractionDigits:1});
         }
     
@@ -234,14 +235,14 @@
         }
 
         // I used drawTypeMin to create a cumulative version of lands. This might actually correct some slight errors with the last version
-        function newLands(landCount, turn){
-            return 1-drawTypeMin(99, landCount, turn + 7, turn);
+        function newLands(deckSize, landCount, turn){
+            return 1-drawTypeMin(deckSize, landCount, turn + 7, turn);
         }
 
         // calculates the probability of a certain number of lands appearning in an opening hand
-        function landCount(L,X){
+        function landCount(deckSize, L, X){
             //let x = (choose(99-L,7-X)*choose(L,X))/(choose(99,7));
-            let x = drawType(99, L, 7, X);
+            let x = drawType(deckSize, L, 7, X);
             return x;
         }
 
@@ -250,13 +251,14 @@
             var textType = Node.textContent ? 'textContent' : 'innerText',
                 L = parseFloat(document.getElementById('L').value) || 0,
                 result = document.getElementById('result1');
+            var deckSize = parseFloat(document.getElementById('land-drop-deck-size').value) || 99;
             let p=0;
             let pList = [];
             let zList = [];
             
             for(let z = 1; z <= 10; z++){
                 //p=p+lands(L,z);
-                p = newLands(L,z);
+                p = newLands(deckSize, L, z);
                 pList.push(p);
 
                 zList.push(z.toString());
@@ -267,7 +269,7 @@
             /*let graph = createBarGraph("land-drop-graph", zList, pList, "Turn");
             document.getElementById("land-drop-result").appendChild(graph);*/
             if(p<.5){
-                result[textType] = Math.round(7/(1-L/99)); //might be a bit low
+                result[textType] = Math.round(7/(1-L/deckSize)); //might be a bit low
             }
             
         }
@@ -277,6 +279,7 @@
             var textType = Node.textContent ? 'textContent' : 'innerText',
                 L = parseFloat(document.getElementById('L1').value) || 0,
                 result = document.getElementById('result2');
+            var deckSize = parseFloat(document.getElementById('opening-land-deck-size').value) || 99;
             
             let p=0;
             let z=0;
@@ -284,11 +287,11 @@
             let zList = [];
             
             while(z<=7){
-                p=p+landCount(L,z);
+                p=p+landCount(deckSize, L, z);
                 if(p<.5){
                     result[textType]= z+1;
                 }
-                pList.push(landCount(L,z));
+                pList.push(landCount(deckSize, L, z));
                 zList.push(z.toString());
                 z=z+1
                 
@@ -351,8 +354,9 @@
                 targetC = parseFloat(document.getElementById('mulltarget-3C').value) || 0,
                 cumulative = document.getElementById('cumulative-3').checked,
                 result = document.getElementById('result-mull-3');
+                var deckSize = parseFloat(document.getElementById('mull3-deck-size').value) || 99;
 
-            let handP = drawThreeTypeMin(99, countA, countB, countC, 7, targetA, targetB, targetC);
+            let handP = drawThreeTypeMin(deckSize, countA, countB, countC, 7, targetA, targetB, targetC);
             let p = handP;
             console.log("p = " + p);
             
@@ -373,14 +377,15 @@
                 countB = parseFloat(document.getElementById('combodraw-B').value) || 0,
                 countC = parseFloat(document.getElementById('combodraw-C').value) || 0,
                 result = document.getElementById('combodraw-result-num');
+            var deckSize = parseFloat(document.getElementById('combodraw-deck-size').value) || 99;
             
             let pList = [];
             let zList = []
             let targetA = Math.min(countA, 1);
             let targetB = Math.min(countB, 1);
             let targetC = Math.min(countC, 1);
-            for(let draws = 0; draws < 90; draws++){
-                let p = drawThreeTypeMin(99, countA, countB, countC, draws + 7, targetA, targetB, targetC);
+            for(let draws = 0; draws < deckSize - 10; draws++){
+                let p = drawThreeTypeMin(deckSize, countA, countB, countC, draws + 7, targetA, targetB, targetC);
                 if(p < .5){
                     result[textType]= draws;
                 }
@@ -620,14 +625,14 @@
             return 0;
         }
 
-        function mullStratOneType(countA, reqA, turnA, penalty){
+        function mullStratOneType(deckSize, countA, reqA, turnA, penalty){
             // check how successful each hand is
             let successMatrix = [];
             let drawMatrix = [];
             for(let a = 0; a <= 7 && a <= countA; a++){
                 let capA = Math.min(reqA, a);
-                let draw = drawType(99, countA, 7, a);
-                let success = afterMullOneType(92, countA-capA, turnA, reqA-capA);
+                let draw = drawType(deckSize, countA, 7, a);
+                let success = afterMullOneType(deckSize - 7, countA-capA, turnA, reqA-capA);
                 if(a > reqA){
                     successMatrix[reqA] = successMatrix[reqA] * (drawMatrix[reqA])/(drawMatrix[reqA] + draw)
                             + success * (draw)/(drawMatrix[reqA] + draw);
@@ -711,7 +716,7 @@
             return [mullSuccess[0], trueMullSuccess[0], sortedRows, mullChances];
         }
 
-        function mullStratTwoType(countA, reqA, turnA, countB, reqB, turnB, penalty){
+        function mullStratTwoType(deckSize, countA, reqA, turnA, countB, reqB, turnB, penalty){
             // check how successful each hand is
             let successMatrix = [];
             let drawMatrix = [];
@@ -721,8 +726,8 @@
                 for(let b = 0; b <= 7 - a && b <= countB; b++){
                     let capA = Math.min(reqA, a);
                     let capB = Math.min(reqB, b);
-                    let draw = drawTwoType(99, countA, countB, 7, a, b);
-                    let success = afterMullTwoType(92, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB);
+                    let draw = drawTwoType(deckSize, countA, countB, 7, a, b);
+                    let success = afterMullTwoType(deckSize - 7, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB);
                     if(a > reqA){
                         let oldShare = (drawMatrix[capA][capB])/(drawMatrix[capA][capB] + draw);
                         let newShare = draw/(drawMatrix[capA][capB] + draw);
@@ -847,7 +852,7 @@
             return [mullSuccess[0], trueMullSuccess[0], sortedRows, mullChances];
         }
 
-        function mullStratThreeType(countA, reqA, turnA, countB, reqB, turnB, countC, reqC, turnC, penalty){
+        function mullStratThreeType(deckSize, countA, reqA, turnA, countB, reqB, turnB, countC, reqC, turnC, penalty){
             // check how successful each hand is
             let successMatrix = [];
             let drawMatrix = [];
@@ -861,8 +866,8 @@
                         let capA = Math.min(reqA, a);
                         let capB = Math.min(reqB, b);
                         let capC = Math.min(reqC, c);
-                        let draw = drawThreeType(99, countA, countB, countC, 7, a, b, c);
-                        let success = afterMullThreeType(92, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB, countC-capC, turnC, reqC-capC);
+                        let draw = drawThreeType(deckSize, countA, countB, countC, 7, a, b, c);
+                        let success = afterMullThreeType(deckSize - 7, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB, countC-capC, turnC, reqC-capC);
                         if(a > reqA){
                             let oldShare = (drawMatrix[capA][capB][capC])/(drawMatrix[capA][capB][capC] + draw);
                             let newShare = draw/(drawMatrix[capA][capB][capC] + draw);
@@ -1031,336 +1036,18 @@
             var turnC = parseFloat(document.getElementById('mull-turn-C').value) || 0;
             var result = document.getElementById('mullstrat-result');
             var penalty = (parseFloat(document.getElementById('mull-penalty').value) / 100) || 0;
-            
-            /*
-            // check how successful each hand is
-            let successMatrix = [];
-            let drawMatrix = [];
-            for(let a = 0; a <= 7 && a <= countA; a++){
-                if(countB == 0){
-                    let capA = Math.min(reqA, a);
-                    let draw = drawType(99, countA, 7, a);
-                    let success = afterMullOneType(92, countA-capA, turnA, reqA-capA);
-                    if(a > reqA){
-                        successMatrix[reqA] = successMatrix[reqA] * (drawMatrix[reqA])/(drawMatrix[reqA] + draw)
-                             + success * (draw)/(drawMatrix[reqA] + draw);
-                        drawMatrix[reqA] += draw;
-                    }
-                    else{
-                        successMatrix.push(success);
-                        drawMatrix.push(draw);
-                    }
-                }
-                else{
-                    let successMatrixA = [];
-                    let drawMatrixA = [];
-                    for(let b = 0; b <= 7 - a && b <= countB; b++){
-                        if(countC == 0){
-                            let capA = Math.min(reqA, a);
-                            let capB = Math.min(reqB, b);
-                            let draw = drawTwoType(99, countA, countB, 7, a, b);
-                            let success = afterMullTwoType(92, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB);
-                            if(a > reqA){
-                                let oldShare = (drawMatrix[capA][capB])/(drawMatrix[capA][capB] + draw);
-                                let newShare = draw/(drawMatrix[capA][capB] + draw);
-                                successMatrix[capA][capB] = successMatrix[capA][capB] * oldShare + success * newShare;
-                                drawMatrix[capA][capB] += draw;
-                            }
-                            else if(b > reqB){
-                                let oldShare = (drawMatrixA[capB])/(drawMatrixA[capB] + draw);
-                                let newShare = draw/(drawMatrixA[capB] + draw);
-                                successMatrixA[capB] = successMatrixA[capB] * oldShare + success * newShare;
-                                drawMatrixA[capB] += draw;
-                            }
-                            else{
-                                successMatrixA.push(success);
-                                drawMatrixA.push(draw);
-                            }
-                        }
-                        else{
-                            let successMatrixB = [];
-                            let drawMatrixB = [];
-                            for(let c = 0; c <= 7 - a - b && c <= countC; c++){
-                                let capA = Math.min(reqA, a);
-                                let capB = Math.min(reqB, b);
-                                let capC = Math.min(reqC, c);
-                                let draw = drawThreeType(99, countA, countB, countC, 7, a, b, c);
-                                let success = afterMullThreeType(92, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB, countC-capC, turnC, reqC-capC);
-                                if(a > reqA){
-                                    let oldShare = (drawMatrix[capA][capB][capC])/(drawMatrix[capA][capB][capC] + draw);
-                                    let newShare = draw/(drawMatrix[capA][capB][capC] + draw);
-                                    successMatrix[capA][capB][capC] = successMatrix[capA][capB][capC] * oldShare + success * newShare;
-                                    drawMatrix[capA][capB][capC] += draw;
-                                }
-                                else if(b > reqB){
-                                    let oldShare = (drawMatrixA[capB][capC])/(drawMatrixA[capB][capC] + draw);
-                                    let newShare = draw/(drawMatrixA[capB][capC] + draw);
-                                    successMatrixA[capB][capC] = successMatrixA[capB][capC] * oldShare + success * newShare;
-                                    drawMatrixA[capB][capC] += draw;
-                                }
-                                else if(c > reqC){
-                                    let oldShare = (drawMatrixB[capC])/(drawMatrixB[capC] + draw);
-                                    let newShare = draw/(drawMatrixB[capC] + draw);
-                                    successMatrixB[capC] = successMatrixB[capC] * oldShare + success * newShare;
-                                    drawMatrixB[capC] += draw;
-                                }
-                                else{
-                                    successMatrixB.push(success);
-                                    drawMatrixB.push(draw);
-                                }
-                            }
-                            successMatrixA.push(successMatrixB);
-                            drawMatrixA.push(drawMatrixB);
-                        }
-                    }
-                    successMatrix.push(successMatrixA);
-                    drawMatrix.push(drawMatrixA);
-                }
-            }
-
-            // figure out best hands to mulligan down to when needed
-            let mullMatrix = [];
-            for(let a = 0; a <= reqA; a++){
-                if(countB == 0){
-                    if(a > 0){
-                        mullMatrix.push("A");
-                    }
-                    else{
-                        mullMatrix.push("X");
-                    }
-                }
-                else{
-                    let mullMatrixA = [];
-                    for(let b = 0; b <= reqB; b++){
-                        if(countC == 0){
-                            let axis = "X";
-                            let value = 0;
-                            if(a > 0 && successMatrix[a-1][b] > value){
-                                axis = "A";
-                                value = successMatrix[a-1][b];
-                            }
-                            if(b > 0 && successMatrix[a][b-1] > value){
-                                axis = "B";
-                                value = successMatrix[a][b-1];
-                            }
-                            mullMatrixA.push(axis);
-                        }
-                        else{
-                            let mullMatrixB = [];
-                            for(let c = 0; c <= reqC; c++){
-                                let axis = "X";
-                                let value = 0;
-                                if(a > 0 && successMatrix[a-1][b][c] > value){
-                                    axis = "A";
-                                    value = successMatrix[a-1][b][c];
-                                }
-                                if(b > 0 && successMatrix[a][b-1][c] > value){
-                                    axis = "B";
-                                    value = successMatrix[a][b-1][c];
-                                }
-                                if(b > 0 && successMatrix[a][b][c-1] > value){
-                                    axis = "B";
-                                    value = successMatrix[a][b][c-1];
-                                }
-                                mullMatrixB.push(axis);
-                            }
-                            mullMatrixA.push(mullMatrixB);
-                        }
-                    }
-                    mullMatrix.push(mullMatrixA);
-                }
-            }
-
-            // check when we want to keep
-            let keepMatrix = [];
-            let mullSuccess = new Array(9).fill(0);
-            let trueMullSuccess = new Array(9).fill(0);
-            let mullChances = new Array(9).fill(0);
-            if(countC > 0){
-                mullSuccess[8] = successMatrix[0][0][0];
-                trueMullSuccess[8] = successMatrix[0][0][0];
-            }
-            else if(countB > 0){
-                mullSuccess[8] = successMatrix[0][0];
-                trueMullSuccess[8] = successMatrix[0][0];
-            }
-            else{
-                mullSuccess[8] = successMatrix[0];
-                trueMullSuccess[8] = successMatrix[0];
-            }
-            for(let a = 0; a <= reqA; a++){
-                if(countB == 0){
-                    keepMatrix.push(1);
-                }
-                else{
-                    let keepMatrixA = [];
-                    for(let b = 0; b <= reqB; b++){
-                        if(countC == 0){
-                            keepMatrixA.push(1);
-                        }
-                        else{
-                            let keepMatrixB = [];
-                            for(let c = 0; c <= reqC; c++){
-                                keepMatrixB.push(1);
-                            }
-                            keepMatrixA.push(keepMatrixB);
-                        }
-                    }
-                    keepMatrix.push(keepMatrixA);
-                }
-            }
-
-            for(let i = 7; i >= 0; i--){
-                let keep = Math.min(8-i, 7);
-                for(let a = 0; a <= reqA; a++){
-                    if(countB == 0){
-                        let myA = Math.min(a, keep);
-                        if(successMatrix[myA] < mullSuccess[i+1] - Math.min(penalty, i)){
-                            mullSuccess[i] += drawMatrix[a] * (mullSuccess[i+1] - Math.min(penalty, i));
-                            trueMullSuccess[i] += drawMatrix[a] * trueMullSuccess[i+1];
-                            mullChances[i+1] += drawMatrix[a];
-                        }
-                        else{
-                            mullSuccess[i] += drawMatrix[a] * successMatrix[myA];
-                            trueMullSuccess[i] += drawMatrix[a] * successMatrix[myA];
-                            keepMatrix[a] = 8-i;
-                        }
-                    }
-                    else{
-                        for(let b = 0; b <= reqB; b++){
-                            if(countC == 0){
-                                let myA = a;
-                                let myB = b;
-                                while(myA + myB > keep){
-                                    if(mullMatrix[myA][myB] == "A"){
-                                        myA--;
-                                    }
-                                    else if(mullMatrix[myA][myB] == "B"){
-                                        myB--;
-                                    }
-                                    else{
-                                        myA = 0;
-                                        myB = 0;
-                                    }
-                                }
-                                if(successMatrix[myA][myB] < mullSuccess[i+1] - Math.min(penalty, i)){
-                                    mullSuccess[i] += drawMatrix[a][b] * (mullSuccess[i+1] - Math.min(penalty, i));
-                                    trueMullSuccess[i] += drawMatrix[a][b] * (trueMullSuccess[i+1]);
-                                    mullChances[i+1] += drawMatrix[a][b];
-                                }
-                                else{
-                                    mullSuccess[i] += drawMatrix[a][b] * successMatrix[myA][myB];
-                                    trueMullSuccess[i] += drawMatrix[a][b] * successMatrix[myA][myB];
-                                    keepMatrix[a][b] = 8-i;
-                                }
-                            }
-                            else{
-                                for(let c = 0; c <= reqC; c++){
-                                    let myA = a;
-                                    let myB = b;
-                                    let myC = c;
-                                    while(myA + myB + myC > keep){
-                                        if(mullMatrix[myA][myB][myC] == "A"){
-                                            myA--;
-                                        }
-                                        else if(mullMatrix[myA][myB][myC] == "B"){
-                                            myB--;
-                                        }
-                                        else if(mullMatrix[myA][myB][myC] == "C"){
-                                            myC--;
-                                        }
-                                        else{
-                                            myA = 0;
-                                            myB = 0;
-                                            myC = 0;
-                                        }
-                                    }
-                                    if(successMatrix[myA][myB][myC] < mullSuccess[i+1] - Math.min(penalty, i)){
-                                        mullSuccess[i] += drawMatrix[a][b][c] * (mullSuccess[i+1] - Math.min(penalty, i));
-                                        trueMullSuccess[i] += drawMatrix[a][b][c] * (trueMullSuccess[i+1]);
-                                        mullChances[i+1] += drawMatrix[a][b][c];
-                                    }
-                                    else{
-                                        mullSuccess[i] += drawMatrix[a][b][c] * successMatrix[myA][myB][myC];
-                                        trueMullSuccess[i] += drawMatrix[a][b][c] * successMatrix[myA][myB][myC];
-                                        keepMatrix[a][b][c] = 8-i;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            let sortedRows = [];
-            for(let a = 0; a <= reqA; a++){
-                if(countB == 0){
-                    if(keepMatrix[a] > 4){
-                        let keepInstruction = "Going to " + keepMatrix[a];
-                        if(keepMatrix[a] == 8){
-                            keepInstruction = "Always";
-                        }
-                        if(keepMatrix[a] == 7){
-                            keepInstruction = "Free Mulligan";
-                        }
-                        sortedRows.push([a, keepInstruction, (drawMatrix[a]*100).toFixed(1) + "%", successMatrix[a]]);
-                    }
-                }
-                else{
-                    for(let b = 0; b <= reqB; b++){
-                        if(countC == 0){
-                            if(keepMatrix[a][b] > 4){
-                                let keepInstruction = "Going to " + keepMatrix[a][b];
-                                if(keepMatrix[a][b] == 8){
-                                    keepInstruction = "Always";
-                                }
-                                if(keepMatrix[a][b] == 7){
-                                    keepInstruction = "Free Mulligan";
-                                }
-                                sortedRows.push([a, b, keepInstruction, (drawMatrix[a][b]*100).toFixed(1) + "%", successMatrix[a][b]]);
-                            }
-                        }
-                        else{
-                            for(let c = 0; c <= reqC; c++){
-                                if(keepMatrix[a][b][c] > 4){
-                                    let keepInstruction = "Going to " + keepMatrix[a][b][c];
-                                    if(keepMatrix[a][b][c] == 8){
-                                        keepInstruction = "Always";
-                                    }
-                                    if(keepMatrix[a][b][c] == 7){
-                                        keepInstruction = "Free Mull";
-                                    }
-                                    sortedRows.push([a, b, c, keepInstruction, (drawMatrix[a][b][c]*100).toFixed(1) + "%", successMatrix[a][b][c]]);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            sortedRows = sortedRows.sort(compareSuccess);
-
-            // calculate absolute discrete mulligan probabilities
-            mullChances[0] = 1;
-            for(let i = 1; i < 9; i++){
-                mullChances[i] *= mullChances[i-1];
-            }
-            for(let i = 0; i < 8; i++){
-                mullChances[i] -= mullChances[i+1];
-            }
-            */
-            
+            var deckSize = parseFloat(document.getElementById('mullstrat-deck-size').value) || 99;
 
             // create table rows
             let functionResults;
             if(countB == 0){
-                functionResults = mullStratOneType(countA, reqA, turnA, penalty);
+                functionResults = mullStratOneType(deckSize, countA, reqA, turnA, penalty);
             }
             else if (countC == 0){
-                functionResults = mullStratTwoType(countA, reqA, turnA, countB, reqB, turnB, penalty);
+                functionResults = mullStratTwoType(deckSize, countA, reqA, turnA, countB, reqB, turnB, penalty);
             }
             else{
-                functionResults = mullStratThreeType(countA, reqA, turnA, countB, reqB, turnB, countC, reqC, turnC, penalty);
+                functionResults = mullStratThreeType(deckSize, countA, reqA, turnA, countB, reqB, turnB, countC, reqC, turnC, penalty);
             }
             let success = functionResults[0];
             let trueSuccess = functionResults[1];
@@ -1371,19 +1058,19 @@
             resultText += "%</strong> (<strong>" + (trueSuccess * 100).toFixed(1) + "%</strong> without penalties)";
 
             if(countB == 0){
-                let functionResultsA = mullStratOneType(countA + 1, reqA, turnA, penalty);
+                let functionResultsA = mullStratOneType(deckSize, countA + 1, reqA, turnA, penalty);
                 resultText += "<br>Adding an extra card of type A would increase this by <strong>" + ((functionResultsA[0] - success)*100).toFixed(2) + "</strong>%";
             }
             else if(countC == 0){
-                let functionResultsA = mullStratTwoType(countA + 1, reqA, turnA, countB, reqB, turnB, penalty);
-                let functionResultsB = mullStratTwoType(countA, reqA, turnA, countB + 1, reqB, turnB, penalty);
+                let functionResultsA = mullStratTwoType(deckSize, countA + 1, reqA, turnA, countB, reqB, turnB, penalty);
+                let functionResultsB = mullStratTwoType(deckSize, countA, reqA, turnA, countB + 1, reqB, turnB, penalty);
                 resultText += "<br>Adding an extra card of type A would increase this by <strong>" + ((functionResultsA[0] - success)*100).toFixed(2) + "</strong>%";
                 resultText += "<br>Adding an extra card of type B would increase this by <strong>" + ((functionResultsB[0] - success)*100).toFixed(2) + "</strong>%";
             }
             else{
-                let functionResultsA = mullStratThreeType(countA + 1, reqA, turnA, countB, reqB, turnB, countC, reqC, turnC, penalty);
-                let functionResultsB = mullStratThreeType(countA, reqA, turnA, countB + 1, reqB, turnB, countC, reqC, turnC, penalty);
-                let functionResultsC = mullStratThreeType(countA, reqA, turnA, countB, reqB, turnB, countC + 1, reqC, turnC, penalty);
+                let functionResultsA = mullStratThreeType(deckSize, countA + 1, reqA, turnA, countB, reqB, turnB, countC, reqC, turnC, penalty);
+                let functionResultsB = mullStratThreeType(deckSize, countA, reqA, turnA, countB + 1, reqB, turnB, countC, reqC, turnC, penalty);
+                let functionResultsC = mullStratThreeType(deckSize, countA, reqA, turnA, countB, reqB, turnB, countC + 1, reqC, turnC, penalty);
                 resultText += "<br>Adding an extra card of type A would increase this by <strong>" + ((functionResultsA[0] - success)*100).toFixed(2) + "</strong>%";
                 resultText += "<br>Adding an extra card of type B would increase this by <strong>" + ((functionResultsB[0] - success)*100).toFixed(2) + "</strong>%";
                 resultText += "<br>Adding an extra card of type C would increase this by <strong>" + ((functionResultsC[0] - success)*100).toFixed(2) + "</strong>%";
@@ -1446,6 +1133,7 @@
         <div class = "calculator" name="mullstrat">
             <div class="inner-calc">
                 <p class="title">Mulligan Strategy Calculator</p>
+                <p class="prompt">Deck size: <input type="text" id="mullstrat-deck-size" value="99" style="width: 30px"></p>
                 <p class="prompt">How many cards of each type are you running? <br>(ex. A = lands, B = ramp)</p>
                 <p class="prompt">
                     <input type="text" class="mull-cat" id="mull-cat-A" placeholder="Type A">
@@ -1479,6 +1167,7 @@
         </div>
         <div class="calculator" name="requiredmulls3type">
             <p class="title"> Mulligans for up to 3 card types</p>
+            <p class="prompt">Deck size: <input type="text" id="mull3-deck-size" value="99" style="width: 30px"></p>
             <p class="prompt"> How many cards of each type are you running? </p>
             <input type="text" id="mullcount-3A" placeholder="Type A" name="Number of Cards in Deck">
             <input type="text" id="mullcount-3B" placeholder="Type B" name="Number of Cards in Deck">
@@ -1502,6 +1191,7 @@
     <div class="column" name="col1">
         <div class="calculator" name="drawby">
             <p class="title"> Card Type Drawn Probability Calculator</p>
+            <p class="prompt">Deck size: <input type="text" id="drawby-deck-size" value="99" style="width: 30px"></p>
             <p class="prompt"> How many cards of the type are you running?</p>
             <input type="text" id="N" ,="" name="Number">
             <p class="prompt"> What turn do you want one by?</p>
@@ -1516,6 +1206,7 @@
         </div>
         <div class="calculator" name="landmiss">
             <p class="title"> Land Drop Miss Calculator</p>
+            <p class="prompt">Deck size: <input type="text" id="land-drop-deck-size" value="99" style="width: 30px"></p>
             <p class="prompt"> How many lands are you running? </p>
             <input type="text" id="L" ,="" name="Lands">
             <p>
@@ -1528,6 +1219,7 @@
         </div>
         <div class="calculator" name="openinglands">
             <p class="title"> Lands in Opening Hand</p>
+            <p class="prompt">Deck size: <input type="text" id="opening-land-deck-size" value="99" style="width: 30px"></p>
             <p class="prompt"> How many lands are you running? </p>
             <input type="text" id="L1" ,="" name="Lands">
             <p>
@@ -1540,6 +1232,7 @@
         </div>
         <div class="calculator" name="combodraws">
             <p class="title"> Draws required to pull off combos</p>
+            <p class="prompt">Deck size: <input type="text" id="combodraw-deck-size" value="99" style="width: 30px"></p>
             <p class="prompt"> How many cards fill the role of each combo piece? </p>
             <input type="text" id="combodraw-A" placeholder="Piece A" name="Number of Cards in Deck">
             <input type="text" id="combodraw-B" placeholder="Piece B" name="Number of Cards in Deck">
