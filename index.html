@@ -1181,6 +1181,64 @@
             document.getElementById("mullstrat-result-box").appendChild(graph);
         }
     </script>
+    <div class="column" name="col1">
+        <div class="calculator" name="drawby">
+            <p class="title"> Card Type Drawn Probability Calculator</p>
+            <p class="prompt">Deck size: <input type="text" id="drawby-deck-size" value="99" style="width: 30px"></p>
+            <p class="prompt"> How many cards of the type are you running?</p>
+            <input type="text" id="N" ,="" name="Number">
+            <p class="prompt"> What turn do you want one by?</p>
+            <input type="text" id="T" ,="" name="Turn">
+            <p>
+            <input type="button" value="Compute" onclick="drawby()">
+            </p>
+            <div class="result-box">
+                <p class="result-text"> Probability: </p>
+                <p class="result-number" id="result" name="prob" p=""></p>
+            </div>
+        </div>
+        <div class="calculator" name="landmiss">
+            <p class="title"> Land Drop Miss Calculator</p>
+            <p class="prompt">Deck size: <input type="text" id="land-drop-deck-size" value="99" style="width: 30px"></p>
+            <p class="prompt"> How many lands are you running? </p>
+            <input type="text" id="L" ,="" name="Lands">
+            <p>
+            <input type="button" value="Compute" onclick="miss()">
+            </p>
+            <div class="result-box" id="land-drop-result">
+                <p class="result-text"> Average (arithmetic median) turn to miss a land drop: </p>
+                <p class="result-number" id="result1" name="int" p=""></p>
+            </div>
+        </div>
+        <div class="calculator" name="openinglands">
+            <p class="title"> Lands in Opening Hand</p>
+            <p class="prompt">Deck size: <input type="text" id="opening-land-deck-size" value="99" style="width: 30px"></p>
+            <p class="prompt"> How many lands are you running? </p>
+            <input type="text" id="L1" ,="" name="Lands">
+            <p>
+            <input type="button" value="Compute" onclick="openingLands()">
+            </p>
+            <div class="result-box" id="opening-land-result">
+                <p class="result-text"> Average (arithmetic median) number of lands: </p>
+                <p class="result-number" id="result2" name="int" p=""></p>
+            </div>
+        </div>
+        <div class="calculator" name="combodraws">
+            <p class="title"> Draws required to pull off combos</p>
+            <p class="prompt">Deck size: <input type="text" id="combodraw-deck-size" value="99" style="width: 30px"></p>
+            <p class="prompt"> How many cards fill the role of each combo piece? </p>
+            <input type="text" id="combodraw-A" placeholder="Piece A" name="Number of Cards in Deck">
+            <input type="text" id="combodraw-B" placeholder="Piece B" name="Number of Cards in Deck">
+            <input type="text" id="combodraw-C" placeholder="Piece C" name="Number of Cards in Deck">
+            <p>
+            <input type="button" value="Compute" onclick="comboDraws()">
+            </p>
+            <div class="result-box" id="combodraw-result">
+                <p class="result-text">Average (arithmetic median) number of draws required: </p>
+                <p class="result-number" id="combodraw-result-num" name="int" p=""></p>
+            </div>
+        </div>
+    </div>
     <div class="column" name="col2">
         <div class = "calculator" name="mullstrat">
             <div class="inner-calc">
@@ -1240,64 +1298,6 @@
             <div class="result-box" id="required-mull-3-result">
                 <p class="result-text">Average (arithmetic median) number of mulligans: </p>
                 <p class="result-number" id="result-mull-3" name="int" p=""></p>
-            </div>
-        </div>
-    </div>
-    <div class="column" name="col1">
-        <div class="calculator" name="drawby">
-            <p class="title"> Card Type Drawn Probability Calculator</p>
-            <p class="prompt">Deck size: <input type="text" id="drawby-deck-size" value="99" style="width: 30px"></p>
-            <p class="prompt"> How many cards of the type are you running?</p>
-            <input type="text" id="N" ,="" name="Number">
-            <p class="prompt"> What turn do you want one by?</p>
-            <input type="text" id="T" ,="" name="Turn">
-            <p>
-            <input type="button" value="Compute" onclick="drawby()">
-            </p>
-            <div class="result-box">
-                <p class="result-text"> Probability: </p>
-                <p class="result-number" id="result" name="prob" p=""></p>
-            </div>
-        </div>
-        <div class="calculator" name="landmiss">
-            <p class="title"> Land Drop Miss Calculator</p>
-            <p class="prompt">Deck size: <input type="text" id="land-drop-deck-size" value="99" style="width: 30px"></p>
-            <p class="prompt"> How many lands are you running? </p>
-            <input type="text" id="L" ,="" name="Lands">
-            <p>
-            <input type="button" value="Compute" onclick="miss()">
-            </p>
-            <div class="result-box" id="land-drop-result">
-                <p class="result-text"> Average (arithmetic median) turn to miss a land drop: </p>
-                <p class="result-number" id="result1" name="int" p=""></p>
-            </div>
-        </div>
-        <div class="calculator" name="openinglands">
-            <p class="title"> Lands in Opening Hand</p>
-            <p class="prompt">Deck size: <input type="text" id="opening-land-deck-size" value="99" style="width: 30px"></p>
-            <p class="prompt"> How many lands are you running? </p>
-            <input type="text" id="L1" ,="" name="Lands">
-            <p>
-            <input type="button" value="Compute" onclick="openingLands()">
-            </p>
-            <div class="result-box" id="opening-land-result">
-                <p class="result-text"> Average (arithmetic median) number of lands: </p>
-                <p class="result-number" id="result2" name="int" p=""></p>
-            </div>
-        </div>
-        <div class="calculator" name="combodraws">
-            <p class="title"> Draws required to pull off combos</p>
-            <p class="prompt">Deck size: <input type="text" id="combodraw-deck-size" value="99" style="width: 30px"></p>
-            <p class="prompt"> How many cards fill the role of each combo piece? </p>
-            <input type="text" id="combodraw-A" placeholder="Piece A" name="Number of Cards in Deck">
-            <input type="text" id="combodraw-B" placeholder="Piece B" name="Number of Cards in Deck">
-            <input type="text" id="combodraw-C" placeholder="Piece C" name="Number of Cards in Deck">
-            <p>
-            <input type="button" value="Compute" onclick="comboDraws()">
-            </p>
-            <div class="result-box" id="combodraw-result">
-                <p class="result-text">Average (arithmetic median) number of draws required: </p>
-                <p class="result-number" id="combodraw-result-num" name="int" p=""></p>
             </div>
         </div>
     </div>
