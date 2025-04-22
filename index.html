@@ -215,15 +215,21 @@
         }
         
         //odds of drawing a card of a type by a certain turn, modified to use drawTypeMin
-        function drawby(T,N){
+        function drawby(T,N, drawn){
             var textType = Node.textContent ? 'textContent' : 'innerText',
                 N = parseFloat(document.getElementById('N').value) || 0,
                 T = parseFloat(document.getElementById('T').value) || 0,
-                result = document.getElementById('result');
+                drawn = parseFloat(document.getElementById('drawby-num').value) || 0,
+                result = document.getElementById('drawby-result');
             var deckSize = parseFloat(document.getElementById('drawby-deck-size').value) || 99;
             //let x=(1-(choose(99-N,7+T)/choose(99,7+T)));
-            let x = (drawTypeMin(deckSize, N, T+7, 1));
-            result[textType] = x.toLocaleString(undefined,{style: 'percent', minimumFractionDigits:1});
+            let x = (drawTypeMin(deckSize, N, T+7, drawn));
+            let y = (drawTypeMin(deckSize, N+1, T+7, drawn)) - x;
+
+            let resultText = "Probability: <strong>" + (x * 100).toFixed(1);
+            resultText += "%</strong><br>Adding another would increase this by <strong>" + (y * 100).toFixed(2) + "%</strong>";
+            result.innerHTML = resultText;
+            //result[textType] = x.toLocaleString(undefined,{style: 'percent', minimumFractionDigits:1});
         }
     
         // odds of missing a land drop with L lands in library
@@ -1187,14 +1193,15 @@
             <p class="prompt">Deck size: <input type="text" id="drawby-deck-size" value="99" style="width: 30px"></p>
             <p class="prompt"> How many cards of the type are you running?</p>
             <input type="text" id="N" ,="" name="Number">
-            <p class="prompt"> What turn do you want one by?</p>
+            <p class="prompt"> How many do you want?</p>
+            <input type="text" id="drawby-num" ,="" name="Drawn">
+            <p class="prompt"> What turn do you want them by?</p>
             <input type="text" id="T" ,="" name="Turn">
             <p>
             <input type="button" value="Compute" onclick="drawby()">
             </p>
             <div class="result-box">
-                <p class="result-text"> Probability: </p>
-                <p class="result-number" id="result" name="prob" p=""></p>
+                <p id="drawby-result" class="result-text"> Probability: </p>
             </div>
         </div>
         <div class="calculator" name="landmiss">
