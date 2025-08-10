@@ -364,7 +364,6 @@
 
             let handP = drawThreeTypeMin(deckSize, countA, countB, countC, 7, targetA, targetB, targetC);
             let p = handP;
-            console.log("p = " + p);
             
             let graph;
             if(cumulative){
@@ -602,7 +601,11 @@
             }
             let success = 0;
             for(let a = reqA; a <= countA && a <= turnA; a++){
-                success += drawType(deckTotal, countA, turnA, a) * afterMullOneType(deckTotal - countA, countB, turnB - a, reqB);
+                for(let b = 0; b <= countB && a + b <= turnA; b++){
+                    let drawP = drawTwoType(deckTotal, countA, countB, turnA, a, b);
+                    let successP = afterMullOneType(deckTotal-turnA, countB-b, turnB-turnA, Math.max(reqB-b, 0));
+                    success += drawP * successP;
+                }
             }
             return success;
         }
@@ -616,7 +619,13 @@
             }
             let success = 0;
             for(let a = reqA; a <= countA && a <= turnA; a++){
-                success += drawType(deckTotal, countA, turnA, a) * afterMullTwoType(deckTotal - countA, countB, turnB - a, reqB, countC, turnC-a, reqC);
+                for(let b = 0; b <= countB && a + b <= turnA; b++){
+                    for(let c = 0; c <= countC && a + b + c <= turnA; c++){
+                        let drawP = drawThreeType(deckTotal, countA, countB, countC, turnA, a, b, c);
+                        let successP = afterMullTwoType(deckTotal-turnA, countB-b, turnB-turnA, Math.max(reqB-b, 0), countC-c, turnC-turnA, Math.max(reqC-c, 0));
+                        success += drawP * successP;
+                    }
+                }
             }
             return success;
         }
@@ -900,7 +909,7 @@
                         let capB = Math.min(reqB, b);
                         let capC = Math.min(reqC, c);
                         let draw = drawThreeType(deckSize, countA, countB, countC, 7, a, b, c);
-                        let success = afterMullThreeType(deckSize - 7, countA-capA, turnA, reqA-capA, countB-capB, turnB, reqB-capB, countC-capC, turnC, reqC-capC);
+                        let success = afterMullThreeType(deckSize - 7, countA-a, turnA, reqA-capA, countB-b, turnB, reqB-capB, countC-c, turnC, reqC-capC);
                         if(a > reqA){
                             let oldShare = (drawMatrix[capA][capB][capC])/(drawMatrix[capA][capB][capC] + draw);
                             let newShare = draw/(drawMatrix[capA][capB][capC] + draw);
